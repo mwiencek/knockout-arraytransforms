@@ -30,6 +30,6 @@ For examples, see ```arrayTransforms.makeTransform``` in the source code.
 
 Note: While I don’t plan on making tons of breaking changes to ```makeTransform```, the API is still in early stages and may be tweaked in later versions (as of 0.1.0).
 
-## license
+## License
 
 MIT (X11). See LICENSE.
