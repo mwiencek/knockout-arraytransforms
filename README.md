@@ -3,21 +3,36 @@
 Allows for creating efficient transformations of observable arrays.
 
 ```JavaScript
-var integers = ko.observableArray([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+var integers = ko.observableArray([
+    ko.observable(10), ko.observable(9),
+    ko.observable(8),  ko.observable(7),
+    ko.observable(6),  ko.observable(5),
+    ko.observable(4),  ko.observable(3),
+    ko.observable(2),  ko.observable(1)
+]);
 
 var evenIntegersOver5 =
     integers.sortBy(function (n) {
-        return n;
+        return n();
     }).filter(function (n) {
+        n = n();
         return n > 5 && n % 2 === 0;
     });
 
-// evenIntegersOver5() -> [6, 8, 10];
+// ko.toJS(evenIntegersOver5) -> [6, 8, 10];
 
-// The sortBy and filter callbacks are only called for 12 and 11, not for every item in the arrays.
-integers.splice(0, 0, 12, 11);
+// The sortBy and filter callbacks are only called for these new items, not
+// every item in the array.
+integers.splice(0, 0, ko.observable(12), ko.observable(11));
 
-// evenIntegersOver5() -> [6, 8, 10, 12];
+// ko.toJS(evenIntegersOver5) -> [6, 8, 10, 12];
+
+// Set the observable containing 1 in the original array to 14. Again, the
+// sortBy and filter callbacks are only called once on index 11. sortBy has
+// all of the previous sort keys cached and performs a fast binary sort.
+integers()[11](14);
+
+// ko.toJS(evenIntegersOver5) -> [6, 8, 10, 12, 14];
 ```
 
 ## Transformations
