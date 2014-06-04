@@ -148,7 +148,7 @@
 
                     if (changes.length) {
                         transform.notifySubscribers(changes, "arrayChange");
-                        changes.length = 0;
+                        state.changes = [];
                     }
                 };
             }
@@ -291,7 +291,7 @@
         filterIndexOf: function (value, reverse) {
             var observables = this.observables,
                 originalArray = this.original.peek(),
-                visibleCount = -1,
+                visibleCount = reverse ? 0 : -1,
                 length = originalArray.length, i = length, j;
 
             while (--i) {

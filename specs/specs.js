@@ -579,3 +579,104 @@ describe("all", function () {
         expect(spy1.calls.count()).toBe(2);
     });
 });
+
+
+describe("chaining", function () {
+    var identity = function (x) { return x },
+        charCode = function (x) { return x.charCodeAt(0) },
+        evenDistanceFrom65 = function (x) { return (x - 65) % 2 === 0 },
+        evenDistanceFromA = function (x) { return evenDistanceFrom65(charCode(x)) },
+        randomLetters = ["H", "I", "F", "G", "D", "E", "B", "C", "A"];
+
+    it("works between filter -> sortBy", function () {
+        var a = ko.observableArray(randomLetters.slice(0)),
+            b = a.filter(evenDistanceFromA).sortBy(identity);
+
+        expect(b()).toEqual(["A", "C", "E", "G", "I"]);
+
+        var latestChanges;
+        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+
+        a.splice(0, 0, "J", "K", "L");
+        expect(b()).toEqual(["A", "C", "E", "G", "I", "K"]);
+        expect(latestChanges).toEqual([{ status: "added", index: 5, value: "K" }]);
+    });
+
+    it("works between sortBy -> filter", function () {
+        var a = ko.observableArray(randomLetters.slice(0)),
+            b = a.sortBy(identity).filter(evenDistanceFromA);
+
+        expect(b()).toEqual(["A", "C", "E", "G", "I"]);
+
+        var latestChanges;
+        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+
+        a.splice(0, 0, "J", "K", "L");
+        expect(b()).toEqual(["A", "C", "E", "G", "I", "K"]);
+        expect(latestChanges).toEqual([{ status: "added", index: 5, value: "K" }]);
+    });
+
+    it("works between filter -> map", function () {
+        var a = ko.observableArray(randomLetters.slice(0)),
+            b = a.filter(evenDistanceFromA).map(charCode);
+
+        expect(b()).toEqual([73, 71, 69, 67, 65]);
+
+        var latestChanges;
+        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+
+        a.splice(0, 0, "J", "K", "L");
+        expect(b()).toEqual([75, 73, 71, 69, 67, 65]);
+        expect(latestChanges).toEqual([{ status: "added", index: 0, value: 75 }]);
+    });
+
+    it("works between map -> filter", function () {
+        var a = ko.observableArray(randomLetters.slice(0)),
+            b = a.map(charCode).filter(evenDistanceFrom65);
+
+        expect(b()).toEqual([73, 71, 69, 67, 65]);
+
+        var latestChanges;
+        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+
+        a.splice(0, 0, "J", "K", "L");
+        expect(b()).toEqual([75, 73, 71, 69, 67, 65]);
+        expect(latestChanges).toEqual([{ status: "added", index: 0, value: 75 }]);
+    });
+
+    it("works between map -> sortBy", function () {
+        var a = ko.observableArray(randomLetters.slice(0)),
+            b = a.map(charCode).sortBy(identity);
+
+        expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73]);
+
+        var latestChanges;
+        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+
+        a.splice(0, 0, "J", "K", "L");
+        expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]);
+        expect(latestChanges).toEqual([
+            { status: "added", index: 9, value: 74 },
+            { status: "added", index: 10, value: 75 },
+            { status: "added", index: 11, value: 76 }
+        ]);
+    });
+
+    it("works between sortBy -> map", function () {
+        var a = ko.observableArray(randomLetters.slice(0)),
+            b = a.map(charCode).sortBy(identity);
+
+        expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73]);
+
+        var latestChanges;
+        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+
+        a.splice(0, 0, "J", "K", "L");
+        expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]);
+        expect(latestChanges).toEqual([
+            { status: "added", index: 9, value: 74 },
+            { status: "added", index: 10, value: 75 },
+            { status: "added", index: 11, value: 76 }
+        ]);
+    });
+});
