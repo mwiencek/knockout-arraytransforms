@@ -6,7 +6,8 @@ module.exports = function (grunt) {
       "knockout-arrayTransforms": {
         src: "knockout-arrayTransforms.js",
         options: {
-          specs: "specs/specs.js"
+          specs: "specs/specs.js",
+          vendor: "specs/lib/knockout-3.1.0.debug.js"
         }
       }
     },
