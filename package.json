@@ -1,18 +1,21 @@
 {
   "name": "knockout-arraytransforms",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Efficient transformations of observable arrays (sortBy, map, filter, any/some, all/every).",
-  "keywords": ["knockout", "observableArray"],
+  "keywords": [
+    "knockout",
+    "observableArray"
+  ],
   "homepage": "https://github.com/mwiencek/knockout-arrayTransforms",
   "bugs": "https://github.com/mwiencek/knockout-arrayTransforms/issues",
   "license": "MIT (X11)",
   "author": "Michael Wiencek <mwiencek1@gmail.com>",
-  "repository" : {
+  "repository": {
     "type": "git",
     "url": "http://github.com/mwiencek/knockout-arrayTransforms.git"
   },
   "dependencies": {
-      "knockout": "~3.1.0"
+    "knockout": "~3.1.0"
   },
   "devDependencies": {
     "grunt": "~0.4.1",

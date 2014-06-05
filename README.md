@@ -37,7 +37,7 @@ integers()[11](14);
 
 ## Transformations
 
-all, any, filter, map, sortBy.
+all/every, any/some, filter, map, sortBy.
 
 ## Create your own
 

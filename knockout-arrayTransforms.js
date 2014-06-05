@@ -1,4 +1,4 @@
-// knockout-arrayTransforms 0.2.0 (https://github.com/mwiencek/knockout-arrayTransforms)
+// knockout-arrayTransforms 0.2.1 (https://github.com/mwiencek/knockout-arrayTransforms)
 // Released under the MIT (X11) License; see the LICENSE file in the official code repository.
 
 (function (factory) {
@@ -140,8 +140,7 @@
         ko.utils.extend(ArrayTransform.prototype, proto);
 
         ko.observableArray.fn[proto.name] = function (callback) {
-            var original = this,
-                state = new ArrayTransform(this, callback),
+            var state = new ArrayTransform(this, callback),
                 transform = state.transform;
 
             if (ko.isObservable(transform) && transform.cacheDiffForKnownOperation) {
