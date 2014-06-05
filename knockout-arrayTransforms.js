@@ -51,7 +51,7 @@
 
             if (status === "added") {
                 if (moved === undefined) {
-                    var observableOrValue = this.watchValue(value);
+                    var observableOrValue = this.watchValue(value, index);
 
                     observables.splice(index, 0, observableOrValue);
                     this.valueAdded(value, index, valueOf(observableOrValue));
@@ -83,7 +83,7 @@
     function indexOf(value, array, reverse) {
         var length = array.length, i = length, j;
 
-        while (--i) {
+        while (i--) {
             j = reverse ? i : length - i - 1;
 
             if (array[j] === value) {
@@ -95,16 +95,19 @@
 
     function noop() {}
 
+    function identity(x) { return x }
+
     function exactlyEqual(a, b) { return a === b }
 
-    function watchValue(value) {
+    function watchValue(value, index) {
         var self = this,
             computedValue = ko.computed(function () {
-                return self.callback(value);
+                return self.callback(value, index === null ? indexOf(value, self.original.peek()) : index);
             }),
             currentValue = computedValue.peek();
 
         if (computedValue.isActive()) {
+            index = null;
             computedValue.equalityComparer = exactlyEqual;
 
             computedValue.subscribe(function (newValue) {
@@ -121,8 +124,14 @@
     ko.arrayTranforms.makeTransform = function (proto) {
         function ArrayTransform(original, callback) {
             this.original = original;
-            this.callback = callback;
             this.observables = [];
+
+            if (typeof callback === "function") {
+                this.callback = callback;
+            } else {
+                this.watchValue = identity;
+            }
+
             this.transform = this.init();
         }
 

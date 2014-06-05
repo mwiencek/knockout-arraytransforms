@@ -1,18 +1,17 @@
 describe("sortBy", function () {
-    var identity = function (x) { return x },
-        randomInts = [1, 9, 2, 8, 3, 7, 4, 6, 5],
+    var randomInts = [1, 9, 2, 8, 3, 7, 4, 6, 5],
         orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     it("sorts an array’s initial contents", function () {
         var a = ko.observableArray(randomInts.slice(0)),
-            b = a.sortBy(identity);
+            b = a.sortBy();
 
         expect(b()).toEqual(orderedInts);
     });
 
     it("sorts values added via push", function () {
         var a = ko.observableArray([]),
-            b = a.sortBy(identity);
+            b = a.sortBy();
 
         a.push.apply(a, randomInts);
         expect(b()).toEqual(orderedInts);
@@ -20,7 +19,7 @@ describe("sortBy", function () {
 
     it("sorts values added via unshift", function () {
         var a = ko.observableArray([]),
-            b = a.sortBy(identity);
+            b = a.sortBy();
 
         a.unshift.apply(a, randomInts);
         expect(b()).toEqual(orderedInts);
@@ -28,7 +27,7 @@ describe("sortBy", function () {
 
     it("sorts values spliced to the beginning", function () {
         var a = ko.observableArray([]),
-            b = a.sortBy(identity);
+            b = a.sortBy();
 
         for (var i = 0, len = randomInts.length; i < len; i++) {
             a.splice(0, 0, randomInts[i]);
@@ -39,7 +38,7 @@ describe("sortBy", function () {
 
     it("sorts values spliced to the end", function () {
         var a = ko.observableArray([]),
-            b = a.sortBy(identity);
+            b = a.sortBy();
 
         for (var i = 0, len = randomInts.length; i < len; i++) {
             a.splice(i, 0, randomInts[i]);
@@ -50,7 +49,7 @@ describe("sortBy", function () {
 
     it("removes values removed from the original array", function () {
         var a = ko.observableArray(randomInts.slice(0)),
-            b = a.sortBy(identity);
+            b = a.sortBy();
 
         a.remove(2);
         a.remove(4);
@@ -105,6 +104,15 @@ describe("sortBy", function () {
         objects[1].name("2");
         expect(spy0.calls.count()).toBe(2);
         expect(spy1.calls.count()).toBe(2);
+    });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(randomInts.slice(0)),
+            expectedIndex = 0;
+
+        a.sortBy(function (x, i) {
+            expect(i).toBe(expectedIndex++);
+        });
     });
 });
 
@@ -212,6 +220,15 @@ describe("filter", function () {
         objects[1].num(4);
         expect(spy0.calls.count()).toBe(2);
         expect(spy1.calls.count()).toBe(2);
+    });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            expectedIndex = 0;
+
+        a.filter(function (x, i) {
+            expect(i).toBe(expectedIndex++);
+        });
     });
 });
 
@@ -350,6 +367,15 @@ describe("map", function () {
         expect(underlyingb[0]).toBe(nh1);
         expect(underlyingb[1]).toBe(nh0);
     });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            expectedIndex = 0;
+
+        a.map(function (x, i) {
+            expect(i).toBe(expectedIndex++);
+        });
+    });
 });
 
 
@@ -462,6 +488,15 @@ describe("any", function () {
         objects[1].num(4);
         expect(spy0.calls.count()).toBe(2);
         expect(spy1.calls.count()).toBe(2);
+    });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            expectedIndex = 0;
+
+        a.any(function (x, i) {
+            expect(i).toBe(expectedIndex++);
+        });
     });
 });
 
@@ -578,19 +613,28 @@ describe("all", function () {
         expect(spy0.calls.count()).toBe(2);
         expect(spy1.calls.count()).toBe(2);
     });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            expectedIndex = 0;
+
+        a.all(function (x, i) {
+            expect(i).toBe(expectedIndex++);
+        });
+    });
 });
 
 
 describe("chaining", function () {
-    var identity = function (x) { return x },
-        charCode = function (x) { return x.charCodeAt(0) },
+    var charCode = function (x) { return x.charCodeAt(0) },
         evenDistanceFrom65 = function (x) { return (x - 65) % 2 === 0 },
         evenDistanceFromA = function (x) { return evenDistanceFrom65(charCode(x)) },
+        greaterThan69 = function (x) { return x > 69 },
         randomLetters = ["H", "I", "F", "G", "D", "E", "B", "C", "A"];
 
     it("works between filter -> sortBy", function () {
         var a = ko.observableArray(randomLetters.slice(0)),
-            b = a.filter(evenDistanceFromA).sortBy(identity);
+            b = a.filter(evenDistanceFromA).sortBy();
 
         expect(b()).toEqual(["A", "C", "E", "G", "I"]);
 
@@ -604,7 +648,7 @@ describe("chaining", function () {
 
     it("works between sortBy -> filter", function () {
         var a = ko.observableArray(randomLetters.slice(0)),
-            b = a.sortBy(identity).filter(evenDistanceFromA);
+            b = a.sortBy().filter(evenDistanceFromA);
 
         expect(b()).toEqual(["A", "C", "E", "G", "I"]);
 
@@ -646,7 +690,7 @@ describe("chaining", function () {
 
     it("works between map -> sortBy", function () {
         var a = ko.observableArray(randomLetters.slice(0)),
-            b = a.map(charCode).sortBy(identity);
+            b = a.map(charCode).sortBy();
 
         expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73]);
 
@@ -664,7 +708,7 @@ describe("chaining", function () {
 
     it("works between sortBy -> map", function () {
         var a = ko.observableArray(randomLetters.slice(0)),
-            b = a.map(charCode).sortBy(identity);
+            b = a.map(charCode).sortBy();
 
         expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73]);
 
@@ -678,5 +722,73 @@ describe("chaining", function () {
             { status: "added", index: 10, value: 75 },
             { status: "added", index: 11, value: 76 }
         ]);
+    });
+
+    it("works between filter -> all", function () {
+        var a = ko.observableArray([68, 69, 70]),
+            b = a.filter(greaterThan69).all(function (x) { return x % 2 === 0 });
+
+        expect(b()).toBe(true);
+
+        a.push(71);
+        expect(b()).toBe(false);
+    });
+
+    it("works between filter -> any", function () {
+        var a = ko.observableArray([68, 69, 70]),
+            b = a.filter(greaterThan69).any(function (x) { return x % 2 === 0 });
+
+        expect(b()).toBe(true);
+
+        a.remove(70);
+        expect(b()).toBe(false);
+    });
+
+    it("works between map -> all", function () {
+        var a = ko.observableArray([68, 69, 70]),
+            b = a.map(function (x) { return x + 1 }).all(greaterThan69);
+
+        expect(b()).toBe(false);
+
+        a.remove(68);
+        expect(b()).toBe(true);
+    });
+
+    it("works between map -> any", function () {
+        var a = ko.observableArray([68, 69, 70]),
+            b = a.map(function (x) { return x - 1 }).any(greaterThan69);
+
+        expect(b()).toBe(false);
+
+        a.push(71);
+        expect(b()).toBe(true);
+    });
+
+    it("works between sortBy -> all", function () {
+        var a = ko.observableArray([70, 69, 68]),
+            b = a.sortBy(),
+            c = b.all(function (x, i) {
+                var prev = b()[i - 1];
+                return prev === undefined || (x - prev) === 1;
+            });
+
+        expect(c()).toBe(true);
+
+        a.remove(69);
+        expect(c()).toBe(false);
+    });
+
+    it("works between sortBy -> any", function () {
+        var a = ko.observableArray([70, 69, 68]),
+            b = a.sortBy(),
+            c = b.any(function (x, i) {
+                var prev = b()[i - 1];
+                return prev !== undefined && (x - prev) === 1;
+            });
+
+        expect(c()).toBe(true);
+
+        a(70, 68, 66);
+        expect(c()).toBe(false);
     });
 });
