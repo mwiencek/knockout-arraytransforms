@@ -51,7 +51,7 @@
 
             if (status === "added") {
                 if (moved === undefined) {
-                    var observableOrValue = this.watchValue(value, index);
+                    var observableOrValue = this.applyCallback(value, index);
 
                     observables.splice(index, 0, observableOrValue);
                     this.valueAdded(value, index, valueOf(observableOrValue));
@@ -95,53 +95,71 @@
 
     function noop() {}
 
-    function identity(x) { return x }
-
     function exactlyEqual(a, b) { return a === b }
 
-    function watchValue(value, index) {
-        var self = this,
+    function applyCallback(value, index) {
+        var callback = this.callback;
+
+        if (callback === undefined) {
+            return value;
+        }
+
+        var owner = this, method = "callback";
+
+        if (typeof callback !== "function") {
+            owner = value;
+            method = callback;
+            callback = owner[method];
+
+            if (typeof callback !== "function") {
+                return callback;
+
+            } else if (ko.isObservable(callback)) {
+                watchValue(this, value, callback);
+                return callback;
+            }
+        }
+
+        var original = this.original,
             computedValue = ko.computed(function () {
-                return self.callback(value, index === null ? indexOf(value, self.original.peek()) : index);
-            }),
-            currentValue = computedValue.peek();
+                return owner[method](value, index === null ? indexOf(value, original.peek()) : index);
+            });
 
         if (computedValue.isActive()) {
             index = null;
             computedValue.equalityComparer = exactlyEqual;
-
-            computedValue.subscribe(function (newValue) {
-                self.valueMutated(value, newValue, currentValue);
-
-                currentValue = newValue;
-
-                if (self.changes && self.changes.length) {
-                    self.transform.notifySubscribers(self.transform.peek());
-                }
-            });
+            watchValue(this, value, computedValue);
             return computedValue;
         } else {
             computedValue.dispose();
-            return currentValue;
+            return computedValue.peek();
         }
+    }
+
+    function watchValue(self, value, observable) {
+        var currentValue = observable.peek();
+
+        observable.subscribe(function (newValue) {
+            self.valueMutated(value, newValue, currentValue);
+
+            currentValue = newValue;
+
+            if (self.changes && self.changes.length) {
+                self.transform.notifySubscribers(self.transform.peek());
+            }
+        });
     }
 
     ko.arrayTranforms.makeTransform = function (proto) {
         function ArrayTransform(original, callback) {
             this.original = original;
             this.observables = [];
-
-            if (typeof callback === "function") {
-                this.callback = callback;
-            } else {
-                this.watchValue = identity;
-            }
-
+            this.callback = callback;
             this.transform = this.init();
         }
 
         ArrayTransform.prototype.applySequentialDiff = applySequentialDiff;
-        ArrayTransform.prototype.watchValue = watchValue;
+        ArrayTransform.prototype.applyCallback = applyCallback;
         ko.utils.extend(ArrayTransform.prototype, proto);
 
         ko.observableArray.fn[proto.name] = function (callback) {

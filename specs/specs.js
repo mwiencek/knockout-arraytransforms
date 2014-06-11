@@ -69,7 +69,7 @@ describe("sortBy", function () {
         ];
 
         var a = ko.observableArray(objects.slice(0)),
-            b = a.sortBy(function (object) { return object.name() });
+            b = a.sortBy("name");
 
         expect(b()).toEqual([objects[2], objects[1], objects[0]]);
 
@@ -129,7 +129,7 @@ describe("sortBy", function () {
         ];
 
         var a = ko.observableArray(original.slice(0)),
-            b = a.sortBy(function (x) { return x.a }),
+            b = a.sortBy("a"),
             sorted = b(),
             order = [6, 7, 8, 3, 4, 5, 0, 1, 2];
 
@@ -832,8 +832,7 @@ describe("chaining", function () {
                 { a: 2, b: 1 }
             ],
             a = ko.observableArray(original),
-            b = a.sortBy(function (x) { return x.b })
-                 .sortBy(function (x) { return x.a });
+            b = a.sortBy("b").sortBy("a");
 
         var sorted = b();
         expect(sorted[0]).toBe(original[1]);
