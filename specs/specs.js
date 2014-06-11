@@ -114,6 +114,38 @@ describe("sortBy", function () {
             expect(i).toBe(expectedIndex++);
         });
     });
+
+    it("is stable", function () {
+        var original = [
+            { a: 3 },
+            { a: 3 },
+            { a: 3 },
+            { a: 2 },
+            { a: 2 },
+            { a: 2 },
+            { a: 1 },
+            { a: 1 },
+            { a: 1 }
+        ];
+
+        var a = ko.observableArray(original.slice(0)),
+            b = a.sortBy(function (x) { return x.a }),
+            sorted = b(),
+            order = [6, 7, 8, 3, 4, 5, 0, 1, 2];
+
+        for (var i = 0; i < 9; i++) {
+            expect(sorted[i]).toBe(original[order[i]]);
+        }
+
+        a.splice(1, 1);
+        a.splice(3, 1);
+        a.splice(5, 1);
+        order = [6, 8, 3, 5, 0, 2];
+
+        for (var i = 0; i < 6; i++) {
+            expect(sorted[i]).toBe(original[order[i]]);
+        }
+    });
 });
 
 
@@ -790,5 +822,23 @@ describe("chaining", function () {
 
         a(70, 68, 66);
         expect(c()).toBe(false);
+    });
+
+    it("works between sortBy -> sortBy", function () {
+        var original = [
+                { a: 1, b: 4 },
+                { a: 1, b: 3 },
+                { a: 2, b: 2 },
+                { a: 2, b: 1 }
+            ],
+            a = ko.observableArray(original),
+            b = a.sortBy(function (x) { return x.b })
+                 .sortBy(function (x) { return x.a });
+
+        var sorted = b();
+        expect(sorted[0]).toBe(original[1]);
+        expect(sorted[1]).toBe(original[0]);
+        expect(sorted[2]).toBe(original[3]);
+        expect(sorted[3]).toBe(original[2]);
     });
 });

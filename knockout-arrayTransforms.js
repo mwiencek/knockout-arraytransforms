@@ -112,7 +112,12 @@
 
             computedValue.subscribe(function (newValue) {
                 self.valueMutated(value, newValue, currentValue);
+
                 currentValue = newValue;
+
+                if (self.changes && self.changes.length) {
+                    self.transform.notifySubscribers(self.transform.peek());
+                }
             });
             return computedValue;
         } else {
@@ -181,37 +186,44 @@
     ko.arrayTranforms.makeTransform({
         name: "sortBy",
         init: function () {
+            this.keyCounts = {};
             this.sortedKeys = [];
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, sortKey) {
-            var mappedIndex = this.sortedIndexOf(sortKey);
+            var mappedIndex = this.sortedIndexOf(sortKey, value),
+                keyCounts = this.keyCounts;
 
             this.transformedArray.splice(mappedIndex, 0, value);
             this.sortedKeys.splice(mappedIndex, 0, sortKey);
+            keyCounts[sortKey] = (keyCounts[sortKey] + 1) || 1;
             this.changes.push({ status: "added", value: value, index: mappedIndex });
         },
-        valueDeleted: function (value, index) {
+        valueDeleted: function (value, index, sortKey) {
             var transform = this.transformedArray,
                 mappedIndex = indexOf(value, transform, index > (transform.length / 2));
 
             transform.splice(mappedIndex, 1);
             this.sortedKeys.splice(mappedIndex, 1);
+            this.keyCounts[sortKey]--;
             this.changes.push({ status: "deleted", value: value, index: mappedIndex });
         },
         valueMoved: noop,
         valueMutated: function (value, newKey, oldKey) {
-            var oldIndex = this.sortedIndexOf(oldKey),
-                newIndex = this.sortedIndexOf(newKey);
+            var oldIndex = this.sortedIndexOf(oldKey, value),
+                newIndex = this.sortedIndexOf(newKey, value);
 
             if (oldIndex !== newIndex) {
-                var transform = this.transform,
-                    sortedKeys = this.sortedKeys;
+                var transform = this.transformedArray,
+                    sortedKeys = this.sortedKeys,
+                    keyCounts = this.keyCounts;
 
                 transform.splice(oldIndex, 1);
                 transform.splice(newIndex, 0, value);
                 sortedKeys.splice(oldIndex, 1);
                 sortedKeys.splice(newIndex, 0, newKey);
+                keyCounts[oldKey]--;
+                keyCounts[newKey] = (keyCounts[newKey] + 1) || 1;
 
                 this.changes.push(
                     { status: "added", index: newIndex, moved: oldIndex, value: value },
@@ -219,33 +231,52 @@
                 );
             }
         },
-        sortedIndexOf: function (key) {
-            var sortedKeys = this.sortedKeys;
+        sortedIndexOf: function (key, value) {
+            var sortedKeys = this.sortedKeys,
+                length = sortedKeys.length;
 
-            if (sortedKeys.length === 0) {
+            if (length === 0) {
                 return 0;
             }
 
-            var start = 0, end = sortedKeys.length - 1, index, testKey;
+            var start = 0, end = length - 1, index;
 
-            while (true) {
-                index = start + Math.ceil((end - start) / 2);
-                testKey = sortedKeys[index];
+            while (start <= end) {
+                index = (start + end) >> 1;
 
-                if (key === testKey) {
-                    return index;
-                }
-
-                if (key < testKey) {
-                    end = index - 1;
-                } else {
+                if (sortedKeys[index] < key) {
                     start = index + 1;
-                }
+                } else {
+                    end = index;
 
-                if (start > end) {
-                    return start;
+                    if (start === end) {
+                        break;
+                    }
                 }
             }
+
+            // Keep things stably sorted. Only incurs a cost if there are
+            // multiple of this key.
+            var count = this.keyCounts[key], offset = 0;
+
+            if (count) {
+                var original = this.original.peek(),
+                    observables = this.observables;
+
+                for (var i = 0; i < length; i++) {
+                    if (original[i] === value) {
+                        break;
+                    }
+                    if (valueOf(observables[i]) === key) {
+                        offset++;
+                    }
+                    if (offset === count) {
+                        break;
+                    }
+                }
+            }
+
+            return start + offset;
         }
     });
 
