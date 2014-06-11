@@ -226,28 +226,39 @@
             this.keyCounts[sortKey]--;
             this.changes.push({ status: "deleted", value: value, index: mappedIndex });
         },
-        valueMoved: noop,
+        valueMoved: function (value, to, from, offset, sortKey) {
+            var oldIndex = indexOf(value, this.transformedArray),
+                newIndex = this.sortedIndexOf(sortKey, value);
+
+            if (oldIndex !== newIndex) {
+                this.moveValue(value, sortKey, oldIndex, newIndex);
+            }
+        },
         valueMutated: function (value, newKey, oldKey) {
             var oldIndex = this.sortedIndexOf(oldKey, value),
                 newIndex = this.sortedIndexOf(newKey, value);
 
             if (oldIndex !== newIndex) {
-                var transform = this.transformedArray,
-                    sortedKeys = this.sortedKeys,
-                    keyCounts = this.keyCounts;
+                this.moveValue(value, newKey, oldIndex, newIndex);
 
-                transform.splice(oldIndex, 1);
-                transform.splice(newIndex, 0, value);
-                sortedKeys.splice(oldIndex, 1);
-                sortedKeys.splice(newIndex, 0, newKey);
+                var keyCounts = this.keyCounts;
                 keyCounts[oldKey]--;
                 keyCounts[newKey] = (keyCounts[newKey] + 1) || 1;
-
-                this.changes.push(
-                    { status: "added", index: newIndex, moved: oldIndex, value: value },
-                    { status: "deleted", index: oldIndex, moved: newIndex, value: value }
-                );
             }
+        },
+        moveValue: function (value, sortKey, oldIndex, newIndex) {
+            var transform = this.transformedArray,
+                sortedKeys = this.sortedKeys;
+
+            transform.splice(oldIndex, 1);
+            transform.splice(newIndex, 0, value);
+            sortedKeys.splice(oldIndex, 1);
+            sortedKeys.splice(newIndex, 0, sortKey);
+
+            this.changes.push(
+                { status: "added", index: newIndex, moved: oldIndex, value: value },
+                { status: "deleted", index: oldIndex, moved: newIndex, value: value }
+            );
         },
         sortedIndexOf: function (key, value) {
             var sortedKeys = this.sortedKeys,

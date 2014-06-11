@@ -137,10 +137,21 @@ describe("sortBy", function () {
             expect(sorted[i]).toBe(original[order[i]]);
         }
 
+        // Remove middle dupes
         a.splice(1, 1);
         a.splice(3, 1);
         a.splice(5, 1);
         order = [6, 8, 3, 5, 0, 2];
+
+        for (var i = 0; i < 6; i++) {
+            expect(sorted[i]).toBe(original[order[i]]);
+        }
+
+        // Reverse leftover dupes
+        a.splice(0, 2, original[2], original[0]);
+        a.splice(2, 2, original[5], original[3]);
+        a.splice(4, 2, original[8], original[6]);
+        order = [8, 6, 5, 3, 2, 0];
 
         for (var i = 0; i < 6; i++) {
             expect(sorted[i]).toBe(original[order[i]]);
