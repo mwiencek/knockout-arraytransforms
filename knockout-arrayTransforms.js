@@ -251,8 +251,13 @@
                 sortedKeys = this.sortedKeys;
 
             transform.splice(oldIndex, 1);
-            transform.splice(newIndex, 0, value);
             sortedKeys.splice(oldIndex, 1);
+
+            if (oldIndex < newIndex) {
+                newIndex--;
+            }
+
+            transform.splice(newIndex, 0, value);
             sortedKeys.splice(newIndex, 0, sortKey);
 
             this.changes.push(

@@ -63,24 +63,23 @@ describe("sortBy", function () {
 
     it("re-sorts values when they change", function () {
         var objects = [
-            { name: ko.observable("foo") },
-            { name: ko.observable("baz") },
-            { name: ko.observable("bar") }
+            { name: ko.observable("") },
+            { name: ko.observable("") },
+            { name: ko.observable("") },
+            { name: ko.observable("") }
         ];
 
         var a = ko.observableArray(objects.slice(0)),
             b = a.sortBy("name");
 
-        expect(b()).toEqual([objects[2], objects[1], objects[0]]);
+        objects[0].name("2");
+        expect(b()).toEqual([objects[1], objects[2], objects[3], objects[0]]);
 
-        objects[0].name("1");
-        expect(b()).toEqual([objects[0], objects[2], objects[1]]);
+        objects[1].name("1");
+        expect(b()).toEqual([objects[2], objects[3], objects[1], objects[0]]);
 
-        objects[1].name("2");
-        expect(b()).toEqual([objects[0], objects[1], objects[2]]);
-
-        objects[2].name("0");
-        expect(b()).toEqual([objects[2], objects[0], objects[1]]);
+        objects[0].name("0");
+        expect(b()).toEqual([objects[2], objects[3], objects[0], objects[1]]);
     });
 
     it("only runs the sort function when it changes", function () {
