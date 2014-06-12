@@ -272,6 +272,14 @@ describe("filter", function () {
             expect(i).toBe(expectedIndex++);
         });
     });
+
+    it("moves values moved in the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.filter(isEven);
+
+        a(orderedInts.slice(0).reverse());
+        expect(b()).toEqual([8, 6, 4, 2]);
+    });
 });
 
 
@@ -540,6 +548,14 @@ describe("any", function () {
             expect(i).toBe(expectedIndex++);
         });
     });
+
+    it("ignores moves in the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.any(isEven);
+
+        a(orderedInts.slice(0).reverse());
+        expect(b()).toBe(true);
+    });
 });
 
 
@@ -663,6 +679,14 @@ describe("all", function () {
         a.all(function (x, i) {
             expect(i).toBe(expectedIndex++);
         });
+    });
+
+    it("ignores moves in the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.all(isEven);
+
+        a(orderedInts.slice(0).reverse());
+        expect(b()).toBe(false);
     });
 });
 

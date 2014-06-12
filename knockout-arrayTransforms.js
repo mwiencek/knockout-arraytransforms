@@ -425,6 +425,7 @@
         valueDeleted: function (value, index, truthiness) {
             this.valueMutated(null, false, truthiness);
         },
+        valueMoved: noop,
         valueMutated: function (value, newTruthiness, oldTruthiness) {
             if (newTruthiness && !oldTruthiness) {
                 this.truthinessCount++;
