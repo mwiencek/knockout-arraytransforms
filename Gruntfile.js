@@ -16,7 +16,10 @@ module.exports = function (grunt) {
         banner: "// <%= pkg.name %> <%= pkg.version %> (<%= pkg.homepage %>)\n" +
                 "// Released under the MIT (X11) License; see the LICENSE file in the official code repository.\n",
         mangle: true,
-        compress: true,
+        compress: {
+          unsafe: true,
+          pure_getters: true
+        },
         preserveComments: false
 
       },

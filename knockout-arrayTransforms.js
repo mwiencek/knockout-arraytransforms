@@ -10,7 +10,6 @@
         factory(window.ko);
     }
 })(function (ko) {
-    ko.arrayTranforms = {};
 
     function applySequentialDiff(changes) {
         var moves = {}, offset = 0;
@@ -51,7 +50,7 @@
 
             if (status === "added") {
                 if (moved === undefined) {
-                    var observableOrValue = this.applyCallback(value, index);
+                    var observableOrValue = applyCallback(this, value, index);
 
                     observables.splice(index, 0, observableOrValue);
                     this.valueAdded(value, index, valueOf(observableOrValue));
@@ -115,14 +114,14 @@
 
     function exactlyEqual(a, b) { return a === b }
 
-    function applyCallback(value, index) {
-        var callback = this.callback;
+    function applyCallback(state, value, index) {
+        var callback = state.callback;
 
         if (callback === undefined) {
             return value;
         }
 
-        var owner = this, method = "callback";
+        var owner = state, method = "callback";
 
         if (typeof callback !== "function") {
             owner = value;
@@ -133,12 +132,12 @@
                 return callback;
 
             } else if (ko.isObservable(callback)) {
-                watchValue(this, value, callback);
+                watchValue(state, value, callback);
                 return callback;
             }
         }
 
-        var original = this.original,
+        var original = state.original,
             computedValue = ko.computed(function () {
                 return owner[method](value, index === null ? indexOf(value, original.peek()) : index);
             });
@@ -146,7 +145,7 @@
         if (computedValue.isActive()) {
             index = null;
             computedValue.equalityComparer = exactlyEqual;
-            watchValue(this, value, computedValue);
+            watchValue(state, value, computedValue);
             return computedValue;
         } else {
             computedValue.dispose();
@@ -164,7 +163,7 @@
         });
     }
 
-    ko.arrayTranforms.makeTransform = function (proto) {
+    function makeTransform(proto) {
         function ArrayTransform(original, callback) {
             this.original = original;
             this.observables = [];
@@ -172,8 +171,6 @@
             this.transform = this.init();
         }
 
-        ArrayTransform.prototype.applySequentialDiff = applySequentialDiff;
-        ArrayTransform.prototype.applyCallback = applyCallback;
         ko.utils.extend(ArrayTransform.prototype, proto);
 
         ko.observableArray.fn[proto.name] = function (callback) {
@@ -198,12 +195,12 @@
                 initialChanges.push({ status: "added", value: originalArray[i], index: i });
             }
 
-            state.applySequentialDiff(initialChanges);
+            applySequentialDiff.call(state, initialChanges);
             return transform;
         };
     };
 
-    ko.arrayTranforms.makeTransform({
+    makeTransform({
         name: "sortBy",
         init: function () {
             this.keyCounts = {};
@@ -319,7 +316,7 @@
         }
     });
 
-    ko.arrayTranforms.makeTransform({
+    makeTransform({
         name: "filter",
         init: function () {
             this.mappedIndexes = [];
@@ -383,7 +380,7 @@
         }
     });
 
-    ko.arrayTranforms.makeTransform({
+    makeTransform({
         name: "map",
         init: function () {
             return ko.observableArray([]);
@@ -438,14 +435,14 @@
         }
     };
 
-    ko.arrayTranforms.makeTransform(ko.utils.extend({
+    makeTransform(ko.utils.extend({
         name: "any",
         getTruthiness: function () {
             return this.truthinessCount > 0;
         }
     }, allOrAny));
 
-    ko.arrayTranforms.makeTransform(ko.utils.extend({
+    makeTransform(ko.utils.extend({
         name: "all",
         getTruthiness: function () {
             return this.truthinessCount === this.observables.length;
@@ -454,4 +451,8 @@
 
     ko.observableArray.fn.some = ko.observableArray.fn.any;
     ko.observableArray.fn.every = ko.observableArray.fn.all;
+
+    ko.arrayTransforms = {
+        makeTransform: makeTransform
+    };
 });
