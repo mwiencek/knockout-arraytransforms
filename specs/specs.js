@@ -849,6 +849,25 @@ describe("chaining", function () {
         expect(b()).toBe(true);
     });
 
+    it("works between map -> map", function () {
+        var a = ko.observableArray([1, 2, 3, 4, 5]),
+            b = a.map(function (x) { return x + 1 }).map(function (x) { return x * 2 });
+
+        expect(b()).toEqual([4, 6, 8, 10, 12]);
+
+        a.unshift(0);
+        expect(b()).toEqual([2, 4, 6, 8, 10, 12]);
+
+        a.push(6);
+        expect(b()).toEqual([2, 4, 6, 8, 10, 12, 14]);
+
+        a.removeAll([1, 2, 3, 4, 5]);
+        expect(b()).toEqual([2, 14]);
+
+        a.splice(1, 1, 1, 2);
+        expect(b()).toEqual([2, 4, 6]);
+    });
+
     it("works between sortBy -> all", function () {
         var a = ko.observableArray([70, 69, 68]),
             b = a.sortBy(),
