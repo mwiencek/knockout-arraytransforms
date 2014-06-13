@@ -71,7 +71,12 @@
             }
         }
 
-        var changes = this.changes;
+        notifyAbsoluteChanges(this);
+    };
+
+    function notifyAbsoluteChanges(state) {
+        var changes = state.changes;
+
         if (changes && changes.length) {
             offset = 0;
 
@@ -88,9 +93,9 @@
                     offset--;
                 }
             }
-            this.transform.notifySubscribers(this.transform.peek());
+            state.transform.notifySubscribers(state.transform.peek());
         }
-    };
+    }
 
     function valueOf(object) {
         return typeof object === "function" ? object.peek() : object;
@@ -151,12 +156,8 @@
 
         observable.subscribe(function (newValue) {
             self.valueMutated(value, newValue, currentValue);
-
             currentValue = newValue;
-
-            if (self.changes && self.changes.length) {
-                self.transform.notifySubscribers(self.transform.peek());
-            }
+            notifyAbsoluteChanges(self);
         });
     }
 
