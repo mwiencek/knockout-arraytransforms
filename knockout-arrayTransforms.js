@@ -93,7 +93,10 @@
                     offset--;
                 }
             }
-            state.transform.notifySubscribers(state.transform.peek());
+            var transform = state.transform;
+            transform.notifySubscribers(transform.peek());
+            transform.notifySubscribers(changes, "arrayChange");
+            state.changes = [];
         }
     }
 
@@ -181,18 +184,9 @@
                 state.changes = [];
                 state.transformedArray = transform.peek();
 
-                // Force knockout to call trackChanges().
-                transform.subscribe(noop, null, "arrayChange").dispose();
-
-                // Replace the change subscription it added with our own.
-                transform._subscriptions.change[0].callback = function () {
-                    var changes = state.changes;
-
-                    if (changes.length) {
-                        transform.notifySubscribers(changes, "arrayChange");
-                        state.changes = [];
-                    }
-                };
+                // Don't allow knockout to call trackChanges()
+                // Writing to this normally isn't supported anyway
+                transform.subscribe = ko.observableArray.fn.subscribe;
             }
 
             this.subscribe(applySequentialDiff, state, "arrayChange");
@@ -205,9 +199,6 @@
             }
 
             state.applySequentialDiff(initialChanges);
-            delete originalArray;
-            delete initialChanges;
-
             return transform;
         };
     };
