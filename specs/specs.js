@@ -698,6 +698,25 @@ describe("chaining", function () {
         greaterThan69 = function (x) { return x > 69 },
         randomLetters = ["H", "I", "F", "G", "D", "E", "B", "C", "A"];
 
+    it("works between filter -> filter", function () {
+        var a = ko.observableArray([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75]),
+            b = a.filter(greaterThan69).filter(evenDistanceFrom65);
+
+        expect(b()).toEqual([71, 73, 75]);
+
+        a.reverse();
+        expect(b()).toEqual([75, 73, 71]);
+
+        a.push(73);
+        expect(b()).toEqual([75, 73, 71, 73]);
+
+        a.unshift(73);
+        expect(b()).toEqual([73, 75, 73, 71, 73]);
+
+        a.removeAll([73]);
+        expect(b()).toEqual([75, 71]);
+    });
+
     it("works between filter -> sortBy", function () {
         var a = ko.observableArray(randomLetters.slice(0)),
             b = a.filter(evenDistanceFromA).sortBy();

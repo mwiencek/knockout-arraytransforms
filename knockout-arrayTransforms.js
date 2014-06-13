@@ -45,7 +45,7 @@
                     observables.splice(from, 1)
                     observables.splice(to, 0, observableOrValue);
 
-                    this.valueMoved(value, to, from, offset, valueOf(observableOrValue));
+                    this.valueMoved(value, to, from, valueOf(observableOrValue));
                 }
             }
 
@@ -71,7 +71,23 @@
             }
         }
 
-        if (this.changes && this.changes.length) {
+        var changes = this.changes;
+        if (changes && changes.length) {
+            offset = 0;
+
+            for (var i = 0, change; change = changes[i]; i++) {
+                var status = change.status;
+
+                if (status === "added") {
+                    if (change.moved !== undefined) {
+                        change.moved -= offset;
+                    }
+                    offset++;
+                } else if (status === "deleted") {
+                    change.index -= offset;
+                    offset--;
+                }
+            }
             this.transform.notifySubscribers(this.transform.peek());
         }
     };
@@ -80,15 +96,9 @@
         return typeof object === "function" ? object.peek() : object;
     }
 
-    function indexOf(value, array, reverse) {
-        var length = array.length, i = length, j;
-
-        while (i--) {
-            j = reverse ? i : length - i - 1;
-
-            if (array[j] === value) {
-                return j;
-            }
+    function indexOf(value, array) {
+        for (var i = 0, len = array.length; i < len; i++) {
+            if (array[i] === value) return i;
         }
         return -1;
     }
@@ -226,7 +236,7 @@
             this.keyCounts[sortKey]--;
             this.changes.push({ status: "deleted", value: value, index: mappedIndex });
         },
-        valueMoved: function (value, to, from, offset, sortKey) {
+        valueMoved: function (value, to, from, sortKey) {
             var oldIndex = indexOf(value, this.transformedArray),
                 newIndex = this.sortedIndexOf(sortKey, value);
 
@@ -320,67 +330,64 @@
     ko.arrayTranforms.makeTransform({
         name: "filter",
         init: function () {
+            this.mappedIndexes = [];
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, shouldBeVisible) {
-            if (shouldBeVisible) {
-                var mappedIndex = this.filterIndexOf(value, index > (this.original.peek().length / 2));
+            var mapping = this.mappedIndexes, mappedIndex = 0;
 
+            if (index > 0) {
+                mappedIndex = mapping[index - 1] || 0;
+
+                if (valueOf(this.observables[index - 1])) {
+                    mappedIndex++;
+                }
+            }
+            mapping.splice(index, 0, mappedIndex);
+
+            if (shouldBeVisible) {
                 this.transformedArray.splice(mappedIndex, 0, value);
+
+                for (var i = index + 1, len = mapping.length; i < len; i++) {
+                    mapping[i]++;
+                }
                 this.changes.push({ status: "added", index: mappedIndex, value: value });
             }
         },
         valueDeleted: function (value, index, shouldBeVisible) {
-            if (shouldBeVisible) {
-                var transform = this.transformedArray,
-                    mappedIndex = indexOf(value, transform, index > (this.original.peek().length / 2));
+            var mapping = this.mappedIndexes, mappedIndex = mapping[index];
+            mapping.splice(index, 1);
 
-                transform.splice(mappedIndex, 1);
+            if (shouldBeVisible) {
+                this.transformedArray.splice(mappedIndex, 1);
+
+                for (var i = index, len = mapping.length; i < len; i++) {
+                    mapping[i]--;
+                }
                 this.changes.push({ status: "deleted", index: mappedIndex, value: value });
             }
         },
-        valueMoved: function (value, to, from, offset, shouldBeVisible) {
+        valueMoved: function (value, to, from, shouldBeVisible) {
+            this.valueDeleted(value, from, shouldBeVisible);
+            this.valueAdded(value, to, shouldBeVisible);
+
             if (shouldBeVisible) {
-                var transform = this.transformedArray,
-                    middleIndex = this.original.peek().length / 2,
-                    deletedIndex = indexOf(value, transform, from > middleIndex);
+                var changes = this.changes,
+                    length = changes.length,
+                    addition = changes[length - 1],
+                    deletion = changes[length - 2];
 
-                transform.splice(deletedIndex, 1);
-
-                var addedIndex = this.filterIndexOf(value, to > middleIndex);
-                transform.splice(addedIndex, 0, value);
-
-                this.changes.push(
-                    { status: "deleted", index: deletedIndex, moved: addedIndex, value: value },
-                    { status: "added", index: addedIndex, moved: deletedIndex, value: value }
-                );
+                addition.moved = deletion.index;
+                deletion.moved = addition.index;
             }
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible) {
             if (shouldBeVisible && !currentlyVisible) {
-                this.valueAdded(value, 0, true);
+                this.valueAdded(value, indexOf(value, this.original.peek()), true);
 
             } else if (!shouldBeVisible && currentlyVisible) {
-                this.valueDeleted(value, 0, true);
+                this.valueDeleted(value, indexOf(value, this.original.peek()), true);
             }
-        },
-        filterIndexOf: function (value, reverse) {
-            var observables = this.observables,
-                originalArray = this.original.peek(),
-                visibleCount = reverse ? 0 : -1,
-                length = originalArray.length, i = length, j;
-
-            while (--i) {
-                j = reverse ? i : length - i - 1;
-
-                if (originalArray[j] === value) {
-                    break;
-                }
-                if (valueOf(observables[j])) {
-                    visibleCount++;
-                }
-            }
-            return reverse ? this.transformedArray.length - visibleCount : visibleCount + 1;
         }
     });
 
@@ -397,13 +404,13 @@
             this.transformedArray.splice(index, 1);
             this.changes.push({ status: "deleted", index: index, value: mappedValue });
         },
-        valueMoved: function (value, to, from, offset, mappedValue) {
+        valueMoved: function (value, to, from, mappedValue) {
             this.transformedArray.splice(from, 1);
             this.transformedArray.splice(to, 0, mappedValue);
 
             this.changes.push(
-                { status: "added", index: to, moved: from - offset, value: mappedValue },
-                { status: "deleted", index: from - offset, moved: to, value: mappedValue }
+                { status: "added", index: to, moved: from, value: mappedValue },
+                { status: "deleted", index: from, moved: to, value: mappedValue }
             );
         },
         valueMutated: function (value, newMappedValue, oldMappedValue) {
