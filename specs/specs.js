@@ -860,10 +860,10 @@ describe("chaining", function () {
 
     it("works between sortBy -> sortBy", function () {
         var original = [
-                { a: 1, b: 4 },
-                { a: 1, b: 3 },
-                { a: 2, b: 2 },
-                { a: 2, b: 1 }
+                { a: ko.observable(1), b: ko.observable(4) },
+                { a: ko.observable(1), b: ko.observable(3) },
+                { a: ko.observable(2), b: ko.observable(2) },
+                { a: ko.observable(2), b: ko.observable(1) }
             ],
             a = ko.observableArray(original),
             b = a.sortBy("b").sortBy("a");
@@ -873,5 +873,11 @@ describe("chaining", function () {
         expect(sorted[1]).toBe(original[0]);
         expect(sorted[2]).toBe(original[3]);
         expect(sorted[3]).toBe(original[2]);
+
+        original[3].b(3);
+        expect(sorted[0]).toBe(original[1]);
+        expect(sorted[1]).toBe(original[0]);
+        expect(sorted[2]).toBe(original[2]);
+        expect(sorted[3]).toBe(original[3]);
     });
 });

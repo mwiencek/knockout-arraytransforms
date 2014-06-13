@@ -235,25 +235,28 @@
             }
         },
         valueMutated: function (value, newKey, oldKey) {
-            var oldIndex = this.sortedIndexOf(oldKey, value),
+            var oldIndex = indexOf(value, this.transformedArray),
                 newIndex = this.sortedIndexOf(newKey, value);
 
             if (oldIndex !== newIndex) {
-                this.moveValue(value, newKey, oldIndex, newIndex);
+                this.moveValue(value, newKey, oldIndex, newIndex, true);
 
                 var keyCounts = this.keyCounts;
                 keyCounts[oldKey]--;
                 keyCounts[newKey] = (keyCounts[newKey] + 1) || 1;
             }
         },
-        moveValue: function (value, sortKey, oldIndex, newIndex) {
+        moveValue: function (value, sortKey, oldIndex, newIndex, isMutation) {
             var transform = this.transformedArray,
                 sortedKeys = this.sortedKeys;
 
             transform.splice(oldIndex, 1);
             sortedKeys.splice(oldIndex, 1);
 
-            if (oldIndex < newIndex) {
+            // If we're here because of a move in the original array, rather
+            // than a mutated value, then the observables array has already
+            // been reordered, thus newIndex is correctly adjusted.
+            if (isMutation && oldIndex < newIndex) {
                 newIndex--;
             }
 
