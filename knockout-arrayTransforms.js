@@ -62,7 +62,7 @@
                 if (moved === undefined) {
                     var observableOrValue = observables.splice(index + offset, 1)[0];
 
-                    if (ko.isObservable(observableOrValue)) {
+                    if (ko.isComputed(observableOrValue)) {
                         observableOrValue.dispose();
                     }
                     this.valueDeleted(value, index + offset, valueOf(observableOrValue));
