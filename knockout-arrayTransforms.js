@@ -229,7 +229,7 @@
         },
         valueDeleted: function (value, index, sortKey) {
             var transform = this.transformedArray,
-                mappedIndex = indexOf(value, transform, index > (transform.length / 2));
+                mappedIndex = indexOf(value, transform);
 
             transform.splice(mappedIndex, 1);
             this.sortedKeys.splice(mappedIndex, 1);
