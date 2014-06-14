@@ -1,7 +1,11 @@
-describe("sortBy", function () {
-    var randomInts = [1, 9, 2, 8, 3, 7, 4, 6, 5],
-        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+(function () {
 
+var randomInts = [1, 9, 2, 8, 3, 7, 4, 6, 5],
+    orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    isEven = function (x) { return x % 2 === 0 };
+
+
+describe("sortBy", function () {
     it("sorts an array’s initial contents", function () {
         var a = ko.observableArray(randomInts.slice(0)),
             b = a.sortBy();
@@ -160,9 +164,6 @@ describe("sortBy", function () {
 
 
 describe("filter", function () {
-    var isEven = function (x) { return x % 2 === 0 },
-        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
     it("filters an array’s initial contents", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
             b = a.filter(isEven);
@@ -284,9 +285,8 @@ describe("filter", function () {
 
 
 describe("map", function () {
-    var square = function (x) { return x * x },
-        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        squaredInts = [1, 4, 9, 16, 25, 36, 49, 64, 81];
+    var squaredInts = [1, 4, 9, 16, 25, 36, 49, 64, 81],
+        square = function (x) { return x * x };
 
     it("maps an array’s initial contents", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
@@ -430,9 +430,6 @@ describe("map", function () {
 
 
 describe("groupBy", function () {
-    var isEven = function (x) { return x % 2 === 0 },
-        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
     it("groups an array’s initial contents", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
             b = a.groupBy(isEven);
@@ -582,9 +579,6 @@ describe("groupBy", function () {
 
 
 describe("any", function () {
-    var isEven = function (x) { return x % 2 === 0 },
-        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
     it("tests an array’s initial contents", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
             b = a.any(isEven);
@@ -712,9 +706,6 @@ describe("any", function () {
 
 
 describe("all", function () {
-    var isEven = function (x) { return x % 2 === 0 },
-        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
     it("tests an array’s initial contents", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
             b = a.all(isEven);
@@ -1071,3 +1062,5 @@ describe("chaining", function () {
         expect(sorted[3]).toBe(original[3]);
     });
 });
+
+}());
