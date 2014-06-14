@@ -874,6 +874,16 @@ describe("chaining", function () {
         expect(latestChanges).toEqual([{ status: "added", index: 5, value: "K" }]);
     });
 
+    it("works between filter -> groupBy", function () {
+        var a = ko.observableArray([66, 67, 68, 69, 70, 71, 72]),
+            b = a.filter(isEven).groupBy(greaterThan69);
+
+        expect(ko.toJS(b())).toEqual([
+            { key: "false", values: [66, 68] },
+            { key: "true", values: [70, 72] }
+        ]);
+    });
+
     it("works between sortBy -> filter", function () {
         var a = ko.observableArray(randomLetters.slice(0)),
             b = a.sortBy().filter(evenDistanceFromA);
@@ -954,7 +964,7 @@ describe("chaining", function () {
 
     it("works between filter -> all", function () {
         var a = ko.observableArray([68, 69, 70]),
-            b = a.filter(greaterThan69).all(function (x) { return x % 2 === 0 });
+            b = a.filter(greaterThan69).all(isEven);
 
         expect(b()).toBe(true);
 
@@ -964,7 +974,7 @@ describe("chaining", function () {
 
     it("works between filter -> any", function () {
         var a = ko.observableArray([68, 69, 70]),
-            b = a.filter(greaterThan69).any(function (x) { return x % 2 === 0 });
+            b = a.filter(greaterThan69).any(isEven);
 
         expect(b()).toBe(true);
 
@@ -1009,6 +1019,16 @@ describe("chaining", function () {
 
         a.splice(1, 1, 1, 2);
         expect(b()).toEqual([2, 4, 6]);
+    });
+
+    it("works between map -> groupBy", function () {
+        var a = ko.observableArray([1, 2, 3, 4, 5]),
+            b = a.map(function (x) { return x + 1 }).groupBy(isEven);
+
+        expect(ko.toJS(b())).toEqual([
+            { key: "true", values: [2, 4, 6] },
+            { key: "false", values: [3, 5] }
+        ]);
     });
 
     it("works between sortBy -> all", function () {
@@ -1060,6 +1080,22 @@ describe("chaining", function () {
         expect(sorted[1]).toBe(original[0]);
         expect(sorted[2]).toBe(original[2]);
         expect(sorted[3]).toBe(original[3]);
+    });
+
+    it("works between sortBy -> groupBy", function () {
+        var original = [
+                { a: ko.observable(1), b: ko.observable(4) },
+                { a: ko.observable(1), b: ko.observable(3) },
+                { a: ko.observable(2), b: ko.observable(2) },
+                { a: ko.observable(2), b: ko.observable(1) }
+            ],
+            a = ko.observableArray(original),
+            b = a.sortBy("b").groupBy("a");
+
+        expect(ko.toJS(b())).toEqual([
+            { key: "2", values: [{ a: 2, b: 1 }, { a: 2, b: 2 }] },
+            { key: "1", values: [{ a: 1, b: 3 }, { a: 1, b: 4 }] }
+        ]);
     });
 });
 
