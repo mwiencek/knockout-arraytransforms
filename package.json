@@ -1,6 +1,6 @@
 {
   "name": "knockout-arraytransforms",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Efficient transformations of observable arrays (sortBy, map, filter, groupBy, any/some, all/every).",
   "keywords": [
     "knockout",
