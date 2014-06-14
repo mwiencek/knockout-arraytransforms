@@ -429,6 +429,158 @@ describe("map", function () {
 });
 
 
+describe("groupBy", function () {
+    var isEven = function (x) { return x % 2 === 0 },
+        orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    it("groups an array’s initial contents", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.groupBy(isEven);
+
+        expect(b()[0].values()).toEqual([1, 3, 5, 7, 9]);
+        expect(b()[1].values()).toEqual([2, 4, 6, 8]);
+    });
+
+    it("groups values added via push", function () {
+        var a = ko.observableArray([]),
+            b = a.groupBy(isEven);
+
+        a.push.apply(a, orderedInts);
+        expect(b()[0].values()).toEqual([1, 3, 5, 7, 9]);
+        expect(b()[1].values()).toEqual([2, 4, 6, 8]);
+    });
+
+    it("groups values added via unshift", function () {
+        var a = ko.observableArray([]),
+            b = a.groupBy(isEven);
+
+        a.unshift.apply(a, orderedInts);
+        expect(b()[0].values()).toEqual([1, 3, 5, 7, 9]);
+        expect(b()[1].values()).toEqual([2, 4, 6, 8]);
+    });
+
+    it("groupBy values spliced to the beginning", function () {
+        var a = ko.observableArray([]),
+            b = a.groupBy(isEven);
+
+        for (var i = 0, len = orderedInts.length; i < len; i++) {
+            a.splice(0, 0, orderedInts[i]);
+        }
+
+        expect(b()[0].values()).toEqual([9, 7, 5, 3, 1]);
+        expect(b()[1].values()).toEqual([8, 6, 4, 2]);
+    });
+
+    it("groups values spliced to the end", function () {
+        var a = ko.observableArray([]),
+            b = a.groupBy(isEven);
+
+        for (var i = 0, len = orderedInts.length; i < len; i++) {
+            a.splice(i, 0, orderedInts[i]);
+        }
+
+        expect(b()[0].values()).toEqual([1, 3, 5, 7, 9]);
+        expect(b()[1].values()).toEqual([2, 4, 6, 8]);
+    });
+
+    it("removes values removed from the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.groupBy(isEven);
+
+        a.splice(0, 5);
+        expect(b()[0].values()).toEqual([7, 9]);
+        expect(b()[1].values()).toEqual([6, 8]);
+
+        a.splice(0, 4);
+        expect(b().length).toBe(0);
+    });
+
+    it("re-groups values when they change", function () {
+        var objects = [
+            { num: ko.observable(1) },
+            { num: ko.observable(2) },
+            { num: ko.observable(3) }
+        ];
+
+        var a = ko.observableArray(objects.slice(0)),
+            b = a.groupBy(function (object) { return isEven(object.num()) });
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "false", values: [{ num: 1 }, { num: 3 }] },
+            { key: "true", values: [{ num: 2 }] }
+        ]);
+
+        objects[0].num(2);
+        objects[1].num(4);
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "false", values: [{ num: 3 }] },
+            { key: "true", values: [{ num: 2 }, { num: 4 }] }
+        ]);
+
+        objects[2].num(6);
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "true", values: [{ num: 2 }, { num: 4 }, { num: 6 }] }
+        ]);
+    });
+
+    it("only runs the groupBy function when it changes", function () {
+        var objects = [
+            { num: ko.observable(1) },
+            { num: ko.observable(2) },
+            { num: ko.observable(3) }
+        ];
+
+        var spy0 = spyOn(objects[0], "num"),
+            spy1 = spyOn(objects[1], "num"),
+            spy2 = spyOn(objects[2], "num"),
+            a = ko.observableArray(objects.slice(0)),
+            b = a.groupBy(function (object) { return isEven(object.num()) });
+
+        expect(spy0.calls.count()).toBe(1);
+        expect(spy1.calls.count()).toBe(1);
+        expect(spy2.calls.count()).toBe(1);
+
+        objects[0].num(2);
+        expect(spy0.calls.count()).toBe(2);
+        expect(spy1.calls.count()).toBe(1);
+        expect(spy2.calls.count()).toBe(1);
+
+        objects[1].num(3);
+        expect(spy0.calls.count()).toBe(2);
+        expect(spy1.calls.count()).toBe(2);
+        expect(spy2.calls.count()).toBe(1);
+
+        objects[2].num(4);
+        expect(spy0.calls.count()).toBe(2);
+        expect(spy1.calls.count()).toBe(2);
+        expect(spy2.calls.count()).toBe(2);
+    });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            expectedIndex = 0;
+
+        a.groupBy(function (x, i) {
+            expect(i).toBe(expectedIndex++);
+        });
+    });
+
+    it("moves values moved in the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.groupBy(isEven);
+
+        a(orderedInts.slice(0).reverse());
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "false", values: [9, 7, 5, 3, 1] },
+            { key: "true", values: [8, 6, 4, 2] }
+        ]);
+    });
+});
+
+
 describe("any", function () {
     var isEven = function (x) { return x % 2 === 0 },
         orderedInts = [1, 2, 3, 4, 5, 6, 7, 8, 9];

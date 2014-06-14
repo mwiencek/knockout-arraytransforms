@@ -11,8 +11,10 @@
     }
 })(function (ko) {
 
-    function applySequentialDiff(changes) {
-        var moves = {}, offset = 0;
+    var transformClasses = emptyObject();
+
+    function applyChanges(state, changes) {
+        var moves = emptyObject(), offset = 0;
 
         for (var i = 0, change; change = changes[i]; i++) {
             var status = change.status;
@@ -21,7 +23,7 @@
                 continue;
             }
 
-            var observables = this.observables,
+            var observables = state.observables,
                 index = change.index,
                 moved = change.moved,
                 value = change.value;
@@ -44,16 +46,16 @@
                     observables.splice(from, 1)
                     observables.splice(to, 0, observableOrValue);
 
-                    this.valueMoved(value, to, from, valueOf(observableOrValue));
+                    state.valueMoved(value, to, from, valueOf(observableOrValue));
                 }
             }
 
             if (status === "added") {
                 if (moved === undefined) {
-                    var observableOrValue = applyCallback(this, value, index);
+                    var observableOrValue = applyCallback(state, value, index);
 
                     observables.splice(index, 0, observableOrValue);
-                    this.valueAdded(value, index, valueOf(observableOrValue));
+                    state.valueAdded(value, index, valueOf(observableOrValue));
                 }
                 offset++;
 
@@ -64,16 +66,14 @@
                     if (ko.isComputed(observableOrValue)) {
                         observableOrValue.dispose();
                     }
-                    this.valueDeleted(value, index + offset, valueOf(observableOrValue));
+                    state.valueDeleted(value, index + offset, valueOf(observableOrValue));
                 }
                 offset--;
             }
         }
-
-        notifyAbsoluteChanges(this);
     };
 
-    function notifyAbsoluteChanges(state) {
+    function notifyChanges(state) {
         var changes = state.changes;
 
         if (changes && changes.length) {
@@ -97,6 +97,15 @@
             transform.notifySubscribers(changes, "arrayChange");
             state.changes = [];
         }
+    }
+
+    function applyAndNotifyChanges(changes) {
+        applyChanges(this, changes);
+        notifyChanges(this);
+    }
+
+    function emptyObject() {
+        return Object.create ? Object.create(null) : {};
     }
 
     function valueOf(object) {
@@ -159,34 +168,40 @@
         observable.subscribe(function (newValue) {
             self.valueMutated(value, newValue, currentValue);
             currentValue = newValue;
-            notifyAbsoluteChanges(self);
+            notifyChanges(self);
         });
     }
 
     function makeTransform(proto) {
-        function ArrayTransform(original, callback) {
+        function ArrayTransform(original, callback, options) {
             this.original = original;
             this.observables = [];
             this.callback = callback;
-            this.transform = this.init();
-        }
 
-        ko.utils.extend(ArrayTransform.prototype, proto);
-
-        ko.observableArray.fn[proto.name] = function (callback) {
-            var state = new ArrayTransform(this, callback),
-                transform = state.transform;
+            var transform = this.init(options);
 
             if (ko.isObservable(transform) && transform.cacheDiffForKnownOperation) {
-                state.changes = [];
-                state.transformedArray = transform.peek();
+                this.changes = [];
+                this.transformedArray = transform.peek();
 
                 // Don't allow knockout to call trackChanges()
                 // Writing to this normally isn't supported anyway
                 transform.subscribe = ko.observableArray.fn.subscribe;
             }
 
-            this.subscribe(applySequentialDiff, state, "arrayChange");
+            this.transform = transform;
+        }
+
+        ArrayTransform.prototype.applyAndNotifyChanges = applyAndNotifyChanges;
+        ko.utils.extend(ArrayTransform.prototype, proto);
+        transformClasses[proto.name] = ArrayTransform;
+
+        ko.observableArray.fn[proto.name] = function (callback, options) {
+            var state = new ArrayTransform(this, callback, options);
+
+            this.subscribe(function (changes) {
+                state.applyAndNotifyChanges(changes);
+            }, null, "arrayChange");
 
             var originalArray = this.peek(),
                 initialChanges = [];
@@ -195,15 +210,15 @@
                 initialChanges.push({ status: "added", value: originalArray[i], index: i });
             }
 
-            applySequentialDiff.call(state, initialChanges);
-            return transform;
+            state.applyAndNotifyChanges(initialChanges);
+            return state.transform;
         };
     };
 
     makeTransform({
         name: "sortBy",
         init: function () {
-            this.keyCounts = {};
+            this.keyCounts = emptyObject();
             this.sortedKeys = [];
             return ko.observableArray([]);
         },
@@ -326,9 +341,20 @@
             var mapping = this.mappedIndexes, mappedIndex = 0;
 
             if (index > 0) {
-                mappedIndex = mapping[index - 1] || 0;
+                var observables = this.observables, previousVisible = false;
+                mappedIndex = mapping[index - 1];
 
-                if (valueOf(this.observables[index - 1])) {
+                if (mappedIndex === undefined) {
+                    mappedIndex = 0;
+
+                    for (var i = 0; i < index; i++) {
+                        if (previousVisible) {
+                            mappedIndex++;
+                        }
+                        mapping.push(mappedIndex);
+                        previousVisible = this.getVisibility(observables[i]);
+                    }
+                } else if (this.getVisibility(observables[index - 1])) {
                     mappedIndex++;
                 }
             }
@@ -377,6 +403,106 @@
             } else if (!shouldBeVisible && currentlyVisible) {
                 this.valueDeleted(value, indexOf(value, this.original.peek()), true);
             }
+        },
+        getVisibility: valueOf
+    });
+
+    makeTransform({
+        name: "groupBy",
+        init: function () {
+            this.groups = emptyObject();
+            this.groupKeys = [];
+            return ko.observableArray([]);
+        },
+        applyAndNotifyChanges: function (changes) {
+            var groups = this.groups,
+                groupKeys = this.groupKeys,
+                transform = this.transformedArray;
+
+            applyChanges(this, changes);
+
+            for (var i = 0, key; key = groupKeys[i]; i++) {
+                var group = groups[key];
+
+                notifyChanges(group);
+
+                if (group.transformedArray.length === 0) {
+                    this.deleteGroup(group, key, i--);
+                }
+            }
+
+            notifyChanges(this);
+        },
+        valueAdded: function (value, index, groupKey) {
+            groupKey = String(groupKey);
+
+            var groups = this.groups,
+                groupKeys = this.groupKeys,
+                group = groups[groupKey];
+
+            if (!group) {
+                group = new transformClasses.filter(this.original, null);
+                groups[groupKey] = group;
+                groupKeys.push(groupKey);
+
+                group.observables = this.observables;
+                group.object = { key: groupKey, values: group.transform };
+
+                group.getVisibility = function (observableOrValue) {
+                    return String(valueOf(observableOrValue)) === groupKey;
+                };
+
+                var transform = this.transformedArray;
+                transform.push(group.object);
+                this.changes.push({ status: "added", index: transform.length - 1, value: group.object });
+            }
+
+            for (var i = 0, key; key = groupKeys[i]; i++) {
+                groups[key].valueAdded(value, index, key === groupKey);
+            }
+        },
+        valueDeleted: function (value, index, groupKey) {
+            groupKey = String(groupKey);
+
+            var groups = this.groups,
+                groupKeys = this.groupKeys;
+
+            for (var i = 0, key; key = groupKeys[i]; i++) {
+                groups[key].valueDeleted(value, index, key === groupKey);
+            }
+        },
+        valueMoved: function (value, to, from, groupKey) {
+            groupKey = String(groupKey);
+
+            var groups = this.groups,
+                groupKeys = this.groupKeys;
+
+            for (var i = 0, key; key = groupKeys[i]; i++) {
+                groups[key].valueMoved(value, to, from, key === groupKey);
+            }
+        },
+        valueMutated: function (value, newGroupKey, oldGroupKey) {
+            var groups = this.groups,
+                newGroup = groups[newGroupKey],
+                oldGroup = groups[oldGroupKey],
+                index = indexOf(value, this.original.peek());
+
+            newGroup.valueAdded(value, index, true);
+            oldGroup.valueDeleted(value, index, true);
+
+            if (oldGroup.transformedArray.length === 0) {
+                this.deleteGroup(oldGroup, oldGroupKey, indexOf(oldGroupKey, this.groupKeys));
+            }
+        },
+        deleteGroup: function (group, groupKey, keyIndex) {
+            delete this.groups[groupKey];
+            this.groupKeys.splice(keyIndex, 1);
+
+            var transform = this.transformedArray,
+                mappedIndex = indexOf(group.object, transform);
+
+            transform.splice(mappedIndex, 1);
+            this.changes.push({ status: "deleted", index: mappedIndex, value: group.object });
         }
     });
 
