@@ -37,13 +37,13 @@ integers()[11](14);
 
 ## Transformations
 
-all/every, any/some, filter, map, sortBy.
+all/every, any/some, filter, groupBy, map, sortBy.
 
 ## Create your own
 
 For examples, see ```ko.arrayTransforms.makeTransform``` in the source code.
 
-Note: While I don’t plan on making tons of breaking changes to ```makeTransform```, the API is still in early stages and may be tweaked in later versions (as of 0.1.0).
+Note: While I don’t plan on making tons of breaking changes to ```makeTransform```, the API is still in early stages and may be tweaked in later versions.
 
 ## License
 
