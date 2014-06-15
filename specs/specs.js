@@ -575,6 +575,47 @@ describe("groupBy", function () {
             { key: "true", values: [8, 6, 4, 2] }
         ]);
     });
+
+    it("notifies changes that occur on the group arrays", function () {
+        var objects = [
+                { num: ko.observable(1) },
+                { num: ko.observable(2) },
+                { num: ko.observable(3) },
+                { num: ko.observable(4) }
+            ],
+            a = ko.observableArray(objects.slice(0)),
+            b = a.groupBy(function (object) { return isEven(object.num()) });
+
+        var evenChanges = [], oddChanges = [];
+        b()[1].values.subscribe(function (changes) { evenChanges.push.apply(evenChanges, changes) }, null, "arrayChange");
+        b()[0].values.subscribe(function (changes) { oddChanges.push.apply(oddChanges, changes) }, null, "arrayChange");
+
+        a.reverse();
+
+        expect(ko.toJS(evenChanges)).toEqual([
+            { status: "deleted", value: { num: 2 }, index: 0, moved: 1 },
+            { status: "added", value: { num: 2 }, index: 1, moved: 0 }
+        ]);
+
+        expect(ko.toJS(oddChanges)).toEqual([
+            { status: "deleted", value: { num: 1 }, index: 0, moved: 1 },
+            { status: "added", value: { num: 1 }, index: 1, moved: 0 }
+        ]);
+
+        evenChanges = [];
+        oddChanges = [];
+        a.removeAll(objects);
+
+        expect(evenChanges).toEqual([
+            { status: "deleted", value: objects[3], index: 0 },
+            { status: "deleted", value: objects[1], index: 0 }
+        ]);
+
+        expect(oddChanges).toEqual([
+            { status: "deleted", value: objects[2], index: 0 },
+            { status: "deleted", value: objects[0], index: 0 }
+        ]);
+    });
 });
 
 
@@ -932,8 +973,8 @@ describe("chaining", function () {
 
         expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73]);
 
-        var latestChanges;
-        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+        var latestChanges = [];
+        b.subscribe(function (changes) { latestChanges.push.apply(latestChanges, changes) }, null, "arrayChange");
 
         a.splice(0, 0, "J", "K", "L");
         expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]);
@@ -950,8 +991,8 @@ describe("chaining", function () {
 
         expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73]);
 
-        var latestChanges;
-        b.subscribe(function (changes) { latestChanges = changes }, null, "arrayChange");
+        var latestChanges = [];
+        b.subscribe(function (changes) { latestChanges.push.apply(latestChanges, changes) }, null, "arrayChange");
 
         a.splice(0, 0, "J", "K", "L");
         expect(b()).toEqual([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]);
