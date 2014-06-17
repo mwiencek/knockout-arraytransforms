@@ -45,23 +45,26 @@
 
                 if (moves[to] === undefined) {
                     moves[to] = true;
-                    item = mappedItems[from];
-                    mappedItems.splice(from, 1)
-                    mappedItems.splice(to, 0, item);
 
-                    if (to > from) {
-                        for (var j = from; j < to; j++) {
-                            tmpItem = mappedItems[j];
-                            tmpItem.index(tmpItem.index.peek() - 1);
+                    if (to !== from) {
+                        item = mappedItems[from];
+                        mappedItems.splice(from, 1)
+                        mappedItems.splice(to, 0, item);
+
+                        if (to > from) {
+                            for (var j = from; j < to; j++) {
+                                tmpItem = mappedItems[j];
+                                tmpItem.index(tmpItem.index.peek() - 1);
+                            }
+                        } else {
+                            for (var j = to + 1; j <= from; j++) {
+                                tmpItem = mappedItems[j];
+                                tmpItem.index(tmpItem.index.peek() + 1);
+                            }
                         }
-                    } else {
-                        for (var j = to + 1; j <= from; j++) {
-                            tmpItem = mappedItems[j];
-                            tmpItem.index(tmpItem.index.peek() + 1);
-                        }
+
+                        this.valueMoved(value, to, from, item.mappedValue, item);
                     }
-
-                    this.valueMoved(value, to, from, item.mappedValue, item);
                 }
             }
 
@@ -116,24 +119,27 @@
     }
 
     function spliceToFrom(state, to, from, addedValue) {
-        var transform = state.transform,
-            array = state.transformedArray,
+        var array = state.transformedArray,
             deletedValue = array[from];
 
+        if (addedValue === deletedValue && to === from) {
+            return;
+        }
+
+        var transform = state.transform;
         array.splice(from, 1);
         array.splice(to, 0, addedValue);
         transform.notifySubscribers(array);
 
         var deletion = { status: "deleted", index: from, value: deletedValue },
-            addition = { status: "added", index: to, value: addedValue },
-            changes = from <= to ? [deletion, addition] : [addition, deletion];
+            addition = { status: "added", index: to, value: addedValue };
 
         if (addedValue === deletedValue) {
             deletion.moved = addition.index;
             addition.moved = deletion.index;
         }
 
-        transform.notifySubscribers(changes, arrayChangeEvent);
+        transform.notifySubscribers([deletion, addition], arrayChangeEvent);
     }
 
     function emptyObject() {
@@ -186,9 +192,11 @@
         item.mappedValue = observable.peek();
 
         observable.subscribe(function (newValue) {
-            var oldValue = item.mappedValue;
+            self.valueMutated(item.value, newValue, item.mappedValue, item);
+
+            // Must be updated after valueMutated because sortBy/filter/etc.
+            // expect/need the old mapped value
             item.mappedValue = newValue;
-            self.valueMutated(item.value, newValue, oldValue, item);
         });
     }
 
@@ -272,14 +280,8 @@
             }
         },
         valueMutated: function (value, newKey, oldKey, item) {
-            // Revert to the old key temporarily, since it's already sorted,
-            // otherwise the binary search won't work
-            item.mappedValue = oldKey;
-
             var oldIndex = item.mappedIndex,
                 newIndex = this.sortedIndexOf(newKey, value, item);
-
-            item.mappedValue = newKey;
 
             if (oldIndex !== newIndex) {
                 this.moveValue(value, newKey, oldIndex, newIndex, item, true);
@@ -362,25 +364,16 @@
         }
     });
 
-    function updateFilterMapping() {
-        var mappedItems = this.mappedItems,
-            mappedIndexProp = this.mappedIndexProp,
-            transformedArray = this.transformedArray,
-            previousArray = transformedArray.concat(),
-            currentItem,
-            mappedIndex = 0;
-
-        for (var i = 0, len = mappedItems.length; i < len; i++) {
-            currentItem = mappedItems[i];
-            currentItem[mappedIndexProp] = mappedIndex;
-
-            if (this.getVisibility(currentItem.mappedValue)) {
-                transformedArray[mappedIndex++] = currentItem.value;
+    function filterIndexOf(state, items, prop, index) {
+        var previousItem, mappedIndex = 0;
+        if (index > 0) {
+            previousItem = items[index - 1];
+            mappedIndex = previousItem[prop] || 0
+            if (state.getVisibility(previousItem.mappedValue)) {
+                mappedIndex++;
             }
         }
-        var changes = ko.utils.compareArrays(previousArray, transformedArray, { sparse: true });
-        this.transform.notifySubscribers(transformedArray);
-        this.transform.notifySubscribers(changes, arrayChangeEvent);
+        return mappedIndex;
     }
 
     makeTransform({
@@ -389,34 +382,77 @@
         init: function () {
             return ko.observableArray([]);
         },
-        valueAdded: function (value, index, visible) {
-            visible && this.updateMapping();
+        valueAdded: function (value, index, visible, item) {
+            var mappedItems = this.mappedItems,
+                mappedIndexProp = this.mappedIndexProp,
+                mappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, index);
+
+            item[mappedIndexProp] = mappedIndex;
+
+            if (visible) {
+                for (var i = index + 1, len = mappedItems.length; i < len; i++) {
+                    mappedItems[i][mappedIndexProp]++;
+                }
+                spliceIn(this, mappedIndex, value);
+            }
         },
         valueDeleted: function (value, index, visible, item) {
-            visible && this.makeInvisible(value, index, item[this.mappedIndexProp]);
+            if (visible) {
+                var mappedItems = this.mappedItems,
+                    mappedIndexProp = this.mappedIndexProp;
+
+                // In normal cases, this item will already be spliced out of
+                // mappedItems, because it was removed from the original array.
+                // But in conjunction with groupBy, which uses filter
+                // underneath, all of the groups share a single mappedItems
+                // and use valueDelete here to "hide" an item from a group even
+                // though it still exists in the original array. In that case,
+                // increment index so that we only update the mappedItems
+                // beyond the hidden one.
+
+                if (mappedItems[index] === item) {
+                    index++;
+                }
+                for (var i = index, len = mappedItems.length; i < len; i++) {
+                    mappedItems[i][mappedIndexProp]--;
+                }
+                spliceOut(this, item[mappedIndexProp], value);
+            }
         },
-        valueMoved: function (value, to, from, visible) {
-            visible && this.updateMapping();
+        valueMoved: function (value, to, from, visible, item) {
+            var mappedItems = this.mappedItems,
+                mappedIndexProp = this.mappedIndexProp,
+                fromMappedIndex = item[mappedIndexProp],
+                toMappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, to);
+
+            // Compensate for the fact that indexes haven't been decremented
+            // yet below, so filterIndexOf is biased.
+            if (to > from) {
+                toMappedIndex--;
+            }
+            item[mappedIndexProp] = toMappedIndex;
+
+            if (visible) {
+                if (to > from) {
+                    for (var i = from; i < to; i++) {
+                        mappedItems[i][mappedIndexProp]--;
+                    }
+                } else {
+                    for (var i = to + 1; i <= from; i++) {
+                        mappedItems[i][mappedIndexProp]++;
+                    }
+                }
+                spliceToFrom(this, toMappedIndex, fromMappedIndex, value);
+            }
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible, item) {
             if (shouldBeVisible && !currentlyVisible) {
-                this.updateMapping();
+                this.valueAdded(value, item.index.peek(), true, item);
 
             } else if (!shouldBeVisible && currentlyVisible) {
-                this.makeInvisible(value, item.index.peek(), item[this.mappedIndexProp]);
+                this.valueDeleted(value, item.index.peek(), true, item);
             }
         },
-        makeInvisible: function (value, index, mappedIndex) {
-            var mappedItems = this.mappedItems,
-                mappedIndexProp = this.mappedIndexProp;
-
-            for (var i = index, len = mappedItems.length; i < len; i++) {
-                mappedItems[i][mappedIndexProp]--;
-            }
-
-            spliceOut(this, mappedIndex, value);
-        },
-        updateMapping: updateFilterMapping,
         getVisibility: Boolean
     });
 
@@ -462,23 +498,44 @@
                 spliceIn(this, this.transformedArray.length, object);
             }
 
-            groups[groupKey].valueAdded(value, index, true, item);
+            for (var key in groups) {
+                groups[key].valueAdded(value, index, key === groupKey, item);
+            }
         },
         valueDeleted: function (value, index, groupKey, item) {
-            this.groups[groupKey].valueDeleted(value, index, true, item);
+            groupKey = String(groupKey);
+
+            var groups = this.groups;
+
+            for (var key in groups) {
+                groups[key].valueDeleted(value, index, key === groupKey, item);
+            }
         },
         valueMoved: function (value, to, from, groupKey, item) {
-            this.groups[groupKey].valueMoved(value, to, from, true, item);
+            groupKey = String(groupKey);
+
+            var groups = this.groups;
+
+            for (var key in groups) {
+                groups[key].valueMoved(value, to, from, key === groupKey, item);
+            }
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
+            newGroupKey = String(newGroupKey);
+            oldGroupKey = String(oldGroupKey);
+
             var groups = this.groups,
-                oldGroup = groups[oldGroupKey];
+                index = item.index.peek(),
+                group;
 
-            oldGroup.makeInvisible(value, item.index.peek(), item[oldGroup.mappedIndexProp]);
-            groups[newGroupKey].updateMapping();
+            for (var key in groups) {
+                group = groups[key];
+                group.valueDeleted(value, index, key === oldGroupKey, item);
+                group.valueAdded(value, index, key === newGroupKey, item);
 
-            if (!oldGroup.transformedArray.length) {
-                this.deleteGroup(String(oldGroupKey));
+                if (!group.transformedArray.length) {
+                    this.deleteGroup(key);
+                }
             }
         },
         deleteGroup: function (groupKey) {

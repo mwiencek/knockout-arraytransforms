@@ -593,8 +593,8 @@ describe("groupBy", function () {
         a.reverse();
 
         expect(ko.toJS(evenChanges)).toEqual([
-            { status: "deleted", value: { num: 2 }, index: 0, moved: 1 },
-            { status: "added", value: { num: 2 }, index: 1, moved: 0 }
+            { status: "deleted", value: { num: 4 }, index: 1, moved: 0 },
+            { status: "added", value: { num: 4 }, index: 0, moved: 1 }
         ]);
 
         expect(ko.toJS(oddChanges)).toEqual([
