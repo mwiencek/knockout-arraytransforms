@@ -118,6 +118,19 @@ describe("sortBy", function () {
         });
     });
 
+    it("re-sorts values that depend on the index observable", function () {
+        var a = ko.observableArray(orderedInts.slice(0));
+
+        var b = a.sortBy(function (n, index) {
+            return a().length - index();
+        });
+
+        expect(b()).toEqual([9, 8, 7, 6, 5, 4, 3, 2, 1]);
+
+        a.reverse();
+        expect(b()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    });
+
     it("is stable", function () {
         var original = [
             { a: 3 },
@@ -274,6 +287,22 @@ describe("filter", function () {
         });
     });
 
+    it("re-filters values that depend on the index observable", function () {
+        var a = ko.observableArray(orderedInts.slice(0));
+
+        var b = a.filter(function (n, index) {
+            return index() % 2 === 0;
+        });
+
+        expect(b()).toEqual([1, 3, 5, 7, 9]);
+
+        a.shift();
+        expect(b()).toEqual([2, 4, 6, 8]);
+
+        a.reverse();
+        expect(b()).toEqual([9, 7, 5, 3]);
+    });
+
     it("moves values moved in the original array", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
             b = a.filter(isEven);
@@ -426,6 +455,19 @@ describe("map", function () {
             expect(i.peek()).toBe(expectedIndex++);
         });
     });
+
+    it("re-maps values that depend on the index observable", function () {
+        var animals = ko.observableArray(["cat", "dog", "goat"]);
+
+        var ranks = animals.map(function (name, index) {
+            return name + ": " + (index() + 1);
+        });
+
+        expect(ranks()).toEqual(["cat: 1", "dog: 2", "goat: 3"]);
+
+        animals.reverse();
+        expect(ranks()).toEqual(["goat: 1", "dog: 2", "cat: 3"]);
+    });
 });
 
 
@@ -562,6 +604,33 @@ describe("groupBy", function () {
         a.groupBy(function (x, i) {
             expect(i.peek()).toBe(expectedIndex++);
         });
+    });
+
+    it("re-groups values that depend on the index observable", function () {
+        var a = ko.observableArray(orderedInts.slice(0));
+
+        var b = a.groupBy(function (n, index) {
+            return index() % 2 === 0;
+        });
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "true", values: [1, 3, 5, 7, 9] },
+            { key: "false", values: [2, 4, 6, 8] }
+        ]);
+
+        a.shift();
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "true", values: [2, 4, 6, 8] },
+            { key: "false", values: [3, 5, 7, 9] }
+        ]);
+
+        a.reverse();
+
+        expect(ko.toJS(b)).toEqual([
+            { key: "true", values: [9, 7, 5, 3] },
+            { key: "false", values: [8, 6, 4, 2] }
+        ]);
     });
 
     it("moves values moved in the original array", function () {
@@ -736,6 +805,23 @@ describe("any", function () {
         });
     });
 
+    it("re-tests values that depend on the index observable", function () {
+        var a = ko.observableArray(orderedInts.slice(0));
+
+        // are any even-indexed values equal to 0?
+        var b = a.any(function (n, index) {
+            return index() % 2 === 0 ? n === 0 : false;
+        });
+
+        expect(b()).toBe(false);
+
+        a.unshift(0);
+        expect(b()).toBe(true);
+
+        a([1, 0, 1]);
+        expect(b()).toBe(false);
+    });
+
     it("ignores moves in the original array", function () {
         var a = ko.observableArray(orderedInts.slice(0)),
             b = a.any(isEven);
@@ -863,6 +949,26 @@ describe("all", function () {
         a.all(function (x, i) {
             expect(i.peek()).toBe(expectedIndex++);
         });
+    });
+
+    it("re-tests values that depend on the index observable", function () {
+        var a = ko.observableArray(orderedInts.slice(0));
+
+        // are all even-indexed values equal to 0?
+        var b = a.all(function (n, index) {
+            return index() % 2 === 0 ? n === 0 : true;
+        });
+
+        expect(b()).toBe(false);
+
+        a([0, 0, 0]);
+        expect(b()).toBe(true);
+
+        a([0, 1, 0]);
+        expect(b()).toBe(true);
+
+        a([0, 1, 1]);
+        expect(b()).toBe(false);
     });
 
     it("ignores moves in the original array", function () {
