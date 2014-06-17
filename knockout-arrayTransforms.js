@@ -202,7 +202,7 @@
             item.mappedIndex = mappedIndex;
             sortedItems.splice(mappedIndex, 0, item);
             addedIndex(sortedItems, "mappedIndex", mappedIndex);
-            keyCounts[sortKey] = (keyCounts[sortKey] + 1) || 1;
+            keyCounts[sortKey] = (keyCounts[sortKey] || 0) + 1;
             this.transform.splice(mappedIndex, 0, value);
         },
         valueDeleted: function (value, index, sortKey, item) {
@@ -237,7 +237,7 @@
 
                 var keyCounts = this.keyCounts;
                 keyCounts[oldKey]--;
-                keyCounts[newKey] = (keyCounts[newKey] + 1) || 1;
+                keyCounts[newKey] = (keyCounts[newKey] || 0) + 1;
             }
         },
         moveValue: function (value, sortKey, oldIndex, newIndex, item, isMutation) {
@@ -263,7 +263,7 @@
             var sortedItems = this.sortedItems,
                 length = sortedItems.length;
 
-            if (length === 0) {
+            if (!length) {
                 return 0;
             }
 
@@ -274,11 +274,8 @@
 
                 if (sortedItems[index].mappedValue < key) {
                     start = index + 1;
-                } else {
-                    end = index;
-                    if (start === end) {
-                        break;
-                    }
+                } else if ((end = index) === start) {
+                    break;
                 }
             }
 
@@ -287,13 +284,15 @@
             var count = this.keyCounts[key], offset = 0;
 
             if (count) {
-                var mappedItems = this.mappedItems;
+                var mappedItems = this.mappedItems, mappedItem;
 
                 for (var i = 0; i < length; i++) {
-                    if (mappedItems[i] === item) {
+                    mappedItem = mappedItems[i];
+
+                    if (mappedItem === item) {
                         break;
                     }
-                    if (mappedItems[i].mappedValue === key) {
+                    if (mappedItem.mappedValue === key) {
                         offset++;
                     }
                     if (offset === count) {
@@ -332,17 +331,17 @@
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, visible) {
-            if (this.getVisibility(visible)) {
+            if (visible) {
                 this.updateMapping();
             }
         },
         valueDeleted: function (value, index, visible, item) {
-            if (this.getVisibility(visible)) {
+            if (visible) {
                 this.makeInvisible(value, index, item[this.mappedIndexProp]);
             }
         },
         valueMoved: function (value, to, from, visible) {
-            if (this.getVisibility(visible)) {
+            if (visible) {
                 this.updateMapping();
             }
         },
@@ -378,7 +377,7 @@
             applyChanges.call(this, changes);
 
             for (var key in groups) {
-                if (groups[key].transformedArray.length === 0) {
+                if (!groups[key].transformedArray.length) {
                     this.deleteGroup(key);
                 }
             }
@@ -405,32 +404,35 @@
             }
 
             for (var key in groups) {
-                groups[key].valueAdded(value, index, groupKey, item);
+                groups[key].valueAdded(value, index, key === groupKey, item);
             }
         },
         valueDeleted: function (value, index, groupKey, item) {
+            groupKey = String(groupKey);
+
             var groups = this.groups;
 
             for (var key in groups) {
-                groups[key].valueDeleted(value, index, groupKey, item);
+                groups[key].valueDeleted(value, index, key === groupKey, item);
             }
         },
         valueMoved: function (value, to, from, groupKey, item) {
+            groupKey = String(groupKey);
+
             var groups = this.groups;
 
             for (var key in groups) {
-                groups[key].valueMoved(value, to, from, groupKey, item);
+                groups[key].valueMoved(value, to, from, key === groupKey, item);
             }
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
             var groups = this.groups,
-                oldGroup = groups[oldGroupKey],
-                index = item.index;
+                oldGroup = groups[oldGroupKey];
 
-            oldGroup.makeInvisible(value, index, this.mappedItems[index][oldGroup.mappedIndexProp]);
+            oldGroup.makeInvisible(value, item.index, item[oldGroup.mappedIndexProp]);
             groups[newGroupKey].updateMapping();
 
-            if (oldGroup.transformedArray.length === 0) {
+            if (!oldGroup.transformedArray.length) {
                 this.deleteGroup(String(oldGroupKey));
             }
         },
@@ -439,12 +441,9 @@
 
             delete this.groups[groupKey];
 
-            for (var i = 0, len = transformedArray.length, object; i < len; i++) {
-                object = transformedArray[i];
-
-                if (object.key === groupKey) {
-                    this.transform.splice(i, 1);
-                    return;
+            for (var i = 0, len = transformedArray.length; i < len; i++) {
+                if (transformedArray[i].key === groupKey) {
+                    return this.transform.splice(i, 1);
                 }
             }
         }
