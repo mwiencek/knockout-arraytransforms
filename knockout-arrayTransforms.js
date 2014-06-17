@@ -29,8 +29,7 @@
             var index = change.index,
                 moved = change.moved,
                 value = change.value,
-                item = change.mappedItem,
-                tmpItem;
+                item = change.mappedItem;
 
             if (moved !== undefined) {
                 // For added statuses, index is a position in the new
@@ -50,21 +49,14 @@
                         item = mappedItems[from];
                         mappedItems.splice(from, 1)
                         mappedItems.splice(to, 0, item);
+                        this.valueMoved(value, to, from, item.mappedValue, item);
                         item.index(to);
 
                         if (to > from) {
-                            for (var j = from; j < to; j++) {
-                                tmpItem = mappedItems[j];
-                                tmpItem.index(tmpItem.index.peek() - 1);
-                            }
+                            updateIndexes(mappedItems, from, to - 1, -1);
                         } else {
-                            for (var j = to + 1; j <= from; j++) {
-                                tmpItem = mappedItems[j];
-                                tmpItem.index(tmpItem.index.peek() + 1);
-                            }
+                            updateIndexes(mappedItems, to + 1, from, 1);
                         }
-
-                        this.valueMoved(value, to, from, item.mappedValue, item);
                     }
                 }
             }
@@ -76,13 +68,8 @@
                     item.value = value;
                     mapValue(this, item);
                     mappedItems.splice(index, 0, item);
-
-                    for (var j = index + 1, len = mappedItems.length; j < len; j++) {
-                        tmpItem = mappedItems[j];
-                        tmpItem.index(tmpItem.index.peek() + 1);
-                    }
-
                     this.valueAdded(value, index, item.mappedValue, item);
+                    updateIndexes(mappedItems, index + 1, mappedItems.length - 1, 1);
                 }
                 offset++;
 
@@ -92,18 +79,20 @@
                     if (item.computed) {
                         item.computed.dispose();
                     }
-
-                    for (var j = index + offset + 1, len = mappedItems.length; j < len; j++) {
-                        tmpItem = mappedItems[j];
-                        tmpItem.index(tmpItem.index.peek() - 1);
-                    }
-
                     this.valueDeleted(value, index + offset, item.mappedValue, item);
+                    updateIndexes(mappedItems, index + offset, mappedItems.length - 1, -1);
                 }
                 offset--;
             }
         }
     };
+
+    function updateIndexes(items, start, end, offset) {
+        while (start <= end) {
+            var item = items[start++];
+            item.index(item.index.peek() + offset);
+        }
+    }
 
     function spliceIn(state, index, value) {
         var transform = state.transform, array = state.transformedArray;
@@ -136,8 +125,8 @@
             addition = { status: "added", index: to, value: addedValue };
 
         if (addedValue === deletedValue) {
-            deletion.moved = addition.index;
-            addition.moved = deletion.index;
+            deletion.moved = to;
+            addition.moved = from;
         }
 
         transform.notifySubscribers([deletion, addition], arrayChangeEvent);
@@ -183,6 +172,7 @@
         if (computedValue.isActive()) {
             computedValue.equalityComparer = exactlyEqual;
             watchItem(state, item, computedValue);
+            item.computed = computedValue;
             return computedValue;
         } else {
             item.mappedValue = computedValue.peek();
