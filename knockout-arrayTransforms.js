@@ -11,7 +11,8 @@
     }
 })(function (ko) {
 
-    var transformClasses = emptyObject();
+    var transformClasses = emptyObject(),
+        arrayChangeEvent = "arrayChange";
 
     function applyChanges(changes) {
         var mappedItems = this.mappedItems,
@@ -100,6 +101,41 @@
         }
     };
 
+    function spliceIn(state, index, value) {
+        var transform = state.transform, array = state.transformedArray;
+        array.splice(index, 0, value);
+        transform.notifySubscribers(array);
+        transform.notifySubscribers([{ status: "added", index: index, value: value }], arrayChangeEvent);
+    }
+
+    function spliceOut(state, index, value) {
+        var transform = state.transform, array = state.transformedArray;
+        array.splice(index, 1);
+        transform.notifySubscribers(array);
+        transform.notifySubscribers([{ status: "deleted", index: index, value: value }], arrayChangeEvent);
+    }
+
+    function spliceToFrom(state, to, from, addedValue) {
+        var transform = state.transform,
+            array = state.transformedArray,
+            deletedValue = array[from];
+
+        array.splice(from, 1);
+        array.splice(to, 0, addedValue);
+        transform.notifySubscribers(array);
+
+        var deletion = { status: "deleted", index: from, value: deletedValue },
+            addition = { status: "added", index: to, value: addedValue },
+            changes = from <= to ? [deletion, addition] : [addition, deletion];
+
+        if (addedValue === deletedValue) {
+            deletion.moved = addition.index;
+            addition.moved = deletion.index;
+        }
+
+        transform.notifySubscribers(changes, arrayChangeEvent);
+    }
+
     function emptyObject() {
         return Object.create ? Object.create(null) : {};
     }
@@ -164,8 +200,10 @@
 
             var transform = this.transform = this.init(options);
             if (ko.isObservable(transform) && transform.cacheDiffForKnownOperation) {
-                // Too difficult to support
-                transform.valueWillMutate = noop;
+                // Disallow knockout to call trackChanges() on this array
+                // Writing to it normally isn't support anyway
+                transform.subscribe = ko.observableArray.fn.subscribe;
+
                 this.transformedArray = transform.peek();
             }
         }
@@ -179,9 +217,7 @@
                 originalArray = this.peek(),
                 initialChanges = [];
 
-            this.subscribe(function (changes) {
-                state.applyChanges(changes);
-            }, null, "arrayChange");
+            this.subscribe(function (changes) { state.applyChanges(changes) }, null, arrayChangeEvent);
 
             for (var i = 0, len = originalArray.length; i < len; i++) {
                 initialChanges.push({ status: "added", value: originalArray[i], index: i });
@@ -212,7 +248,7 @@
                 sortedItems[i].mappedIndex++;
             }
 
-            this.transform.splice(mappedIndex, 0, value);
+            spliceIn(this, mappedIndex, value);
         },
         valueDeleted: function (value, index, sortKey, item) {
             var mappedIndex = item.mappedIndex,
@@ -225,7 +261,7 @@
                 sortedItems[i].mappedIndex--;
             }
 
-            this.transform.splice(mappedIndex, 1);
+            spliceOut(this, mappedIndex, value);
         },
         valueMoved: function (value, to, from, sortKey, item) {
             var oldIndex = item.mappedIndex,
@@ -257,9 +293,6 @@
             var sortedItems = this.sortedItems,
                 transformedArray = this.transformedArray;
 
-            sortedItems.splice(oldIndex, 1);
-            transformedArray.splice(oldIndex, 1);
-
             // If we're here because of a move in the original array, rather
             // than a mutated value, then the mappedItems array has already
             // been reordered, thus newIndex is correctly adjusted.
@@ -267,8 +300,9 @@
                 newIndex--;
             }
 
-            item.mappedIndex = newIndex;
+            sortedItems.splice(oldIndex, 1);
             sortedItems.splice(newIndex, 0, item);
+            item.mappedIndex = newIndex;
 
             if (newIndex > oldIndex) {
                 for (var i = oldIndex; i < newIndex; i++) {
@@ -280,8 +314,7 @@
                 }
             }
 
-            transformedArray.splice(newIndex, 0, value);
-            this.transform.notifySubscribers(transformedArray);
+            spliceToFrom(this, newIndex, oldIndex, value);
         },
         sortedIndexOf: function (key, value, item) {
             var sortedItems = this.sortedItems,
@@ -333,19 +366,21 @@
         var mappedItems = this.mappedItems,
             mappedIndexProp = this.mappedIndexProp,
             transformedArray = this.transformedArray,
+            previousArray = transformedArray.concat(),
             currentItem,
-            currentIndex = 0;
+            mappedIndex = 0;
 
         for (var i = 0, len = mappedItems.length; i < len; i++) {
             currentItem = mappedItems[i];
+            currentItem[mappedIndexProp] = mappedIndex;
 
             if (this.getVisibility(currentItem.mappedValue)) {
-                currentItem[mappedIndexProp] = currentIndex;
-                transformedArray[currentIndex++] = currentItem.value;
+                transformedArray[mappedIndex++] = currentItem.value;
             }
         }
-        transformedArray.length = currentIndex;
+        var changes = ko.utils.compareArrays(previousArray, transformedArray, { sparse: true });
         this.transform.notifySubscribers(transformedArray);
+        this.transform.notifySubscribers(changes, arrayChangeEvent);
     }
 
     makeTransform({
@@ -355,19 +390,13 @@
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, visible) {
-            if (visible) {
-                this.updateMapping();
-            }
+            visible && this.updateMapping();
         },
         valueDeleted: function (value, index, visible, item) {
-            if (visible) {
-                this.makeInvisible(value, index, item[this.mappedIndexProp]);
-            }
+            visible && this.makeInvisible(value, index, item[this.mappedIndexProp]);
         },
         valueMoved: function (value, to, from, visible) {
-            if (visible) {
-                this.updateMapping();
-            }
+            visible && this.updateMapping();
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible, item) {
             if (shouldBeVisible && !currentlyVisible) {
@@ -385,7 +414,7 @@
                 mappedItems[i][mappedIndexProp]--;
             }
 
-            this.transform.splice(mappedIndex, 1);
+            spliceOut(this, mappedIndex, value);
         },
         updateMapping: updateFilterMapping,
         getVisibility: Boolean
@@ -430,7 +459,7 @@
                 object.key = groupKey;
                 object.values = group.transform;
 
-                this.transform.push(object);
+                spliceIn(this, this.transformedArray.length, object);
             }
 
             groups[groupKey].valueAdded(value, index, true, item);
@@ -459,7 +488,7 @@
 
             for (var i = 0, len = transformedArray.length; i < len; i++) {
                 if (transformedArray[i].key === groupKey) {
-                    return this.transform.splice(i, 1);
+                    return spliceOut(this, i, transformedArray[i]);
                 }
             }
         }
@@ -471,22 +500,17 @@
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, mappedValue) {
-            this.transform.splice(index, 0, mappedValue);
+            spliceIn(this, index, mappedValue);
         },
-        valueDeleted: function (value, index) {
-            this.transform.splice(index, 1);
+        valueDeleted: function (value, index, mappedValue) {
+            spliceOut(this, index, mappedValue);
         },
         valueMoved: function (value, to, from, mappedValue) {
-            var transformedArray = this.transformedArray;
-            transformedArray.splice(from, 1);
-            transformedArray.splice(to, 0, mappedValue);
-            this.transform.notifySubscribers(transformedArray);
+            spliceToFrom(this, to, from, mappedValue);
         },
         valueMutated: function (value, newMappedValue, oldMappedValue, item) {
-            var transformedArray = this.transformedArray, index = item.index.peek();
-            transformedArray.splice(index, 1);
-            transformedArray.splice(index, 0, newMappedValue);
-            this.transform.notifySubscribers(transformedArray);
+            var index = item.index.peek();
+            spliceToFrom(this, index, index, newMappedValue);
         }
     });
 
