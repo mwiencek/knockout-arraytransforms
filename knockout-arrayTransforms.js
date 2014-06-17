@@ -103,6 +103,8 @@
         return Object.create ? Object.create(null) : {};
     }
 
+    function noop() {}
+
     function exactlyEqual(a, b) { return a === b }
 
     function mapValue(state, item) {
@@ -161,6 +163,8 @@
 
             var transform = this.transform = this.init(options);
             if (ko.isObservable(transform) && transform.cacheDiffForKnownOperation) {
+                // Too difficult to support
+                transform.valueWillMutate = noop;
                 this.transformedArray = transform.peek();
             }
         }
@@ -241,10 +245,11 @@
             }
         },
         moveValue: function (value, sortKey, oldIndex, newIndex, item, isMutation) {
-            var sortedItems = this.sortedItems;
+            var sortedItems = this.sortedItems,
+                transformedArray = this.transformedArray;
 
             sortedItems.splice(oldIndex, 1);
-            this.transform.splice(oldIndex, 1);
+            transformedArray.splice(oldIndex, 1);
 
             // If we're here because of a move in the original array, rather
             // than a mutated value, then the mappedItems array has already
@@ -257,7 +262,9 @@
             sortedItems.splice(newIndex, 0, item);
 
             movedIndex(sortedItems, "mappedIndex", newIndex, oldIndex);
-            this.transform.splice(newIndex, 0, value);
+            transformedArray.splice(newIndex, 0, value);
+
+            this.transform.notifySubscribers(transformedArray);
         },
         sortedIndexOf: function (key, value, item) {
             var sortedItems = this.sortedItems,
@@ -461,12 +468,16 @@
             this.transform.splice(index, 1);
         },
         valueMoved: function (value, to, from, mappedValue) {
-            this.transform.splice(from, 1);
-            this.transform.splice(to, 0, mappedValue);
+            var transformedArray = this.transformedArray;
+            transformedArray.splice(from, 1);
+            transformedArray.splice(to, 0, mappedValue);
+            this.transform.notifySubscribers(transformedArray);
         },
         valueMutated: function (value, newMappedValue, oldMappedValue, item) {
-            this.transform.splice(item.index, 1);
-            this.transform.splice(item.index, 0, newMappedValue);
+            var transformedArray = this.transformedArray, index = item.index;
+            transformedArray.splice(index, 1);
+            transformedArray.splice(index, 0, newMappedValue);
+            this.transform.notifySubscribers(transformedArray);
         }
     });
 
@@ -481,7 +492,7 @@
         valueDeleted: function (value, index, truthiness) {
             this.valueMutated(null, false, truthiness);
         },
-        valueMoved: function noop() {},
+        valueMoved: noop,
         valueMutated: function (value, newTruthiness, oldTruthiness) {
             if (newTruthiness && !oldTruthiness) {
                 this.truthinessCount++;
