@@ -50,6 +50,7 @@
                         item = mappedItems[from];
                         mappedItems.splice(from, 1)
                         mappedItems.splice(to, 0, item);
+                        item.index(to);
 
                         if (to > from) {
                             for (var j = from; j < to; j++) {
