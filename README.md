@@ -39,6 +39,38 @@ integers()[11](14);
 
 all/every, any/some, filter, groupBy, map, sortBy.
 
+Callback functions receive two arguments: an item in the original array, and an observable containing the index of that item in the original array.
+
+```JavaScript
+var animals = ko.observableArray(["cat", "dog"]);
+
+var ranks = animals.map(function (name, index) {
+    return name + ": " + (index() + 1);
+});
+
+// ranks() -> ["cat: 1", "dog: 2"];
+
+animals.reverse();
+
+// ranks() -> ["dog: 1", "cat: 2"];
+```
+
+```groupBy``` returns an array of objects containing a key string and a values observableArray.
+
+```JavaScript
+var integers = ko.observableArray([1, 2, 3, 4, 5]);
+
+var evenOrOdd = integers.groupBy(function (n) {
+    // return value is always coerced into a string
+    return n % 2 === 0;
+});
+
+// evenOrOdd() -> [
+//     { key: "false", values: ko.observableArray([1, 3, 5]) },
+//     { key: "true", values: ko.observableArray([2, 4]) }
+// ]
+```
+
 ## Create your own
 
 For examples, see ```ko.arrayTransforms.makeTransform``` in the source code.
