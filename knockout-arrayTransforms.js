@@ -28,7 +28,8 @@
             var index = change.index,
                 moved = change.moved,
                 value = change.value,
-                item = change.mappedItem;
+                item = change.mappedItem,
+                tmpItem;
 
             if (moved !== undefined) {
                 // For added statuses, index is a position in the new
@@ -46,7 +47,19 @@
                     item = mappedItems[from];
                     mappedItems.splice(from, 1)
                     mappedItems.splice(to, 0, item);
-                    movedIndex(mappedItems, "index", to, from);
+
+                    if (to > from) {
+                        for (var j = from; j < to; j++) {
+                            tmpItem = mappedItems[j];
+                            tmpItem.index(tmpItem.index.peek() - 1);
+                        }
+                    } else {
+                        for (var j = to + 1; j <= from; j++) {
+                            tmpItem = mappedItems[j];
+                            tmpItem.index(tmpItem.index.peek() + 1);
+                        }
+                    }
+
                     this.valueMoved(value, to, from, item.mappedValue, item);
                 }
             }
@@ -54,11 +67,16 @@
             if (status === "added") {
                 if (moved === undefined) {
                     item = emptyObject();
-                    item.index = index;
+                    item.index = ko.observable(index);
                     item.value = value;
                     mapValue(this, item);
                     mappedItems.splice(index, 0, item);
-                    addedIndex(mappedItems, "index", index);
+
+                    for (var j = index + 1, len = mappedItems.length; j < len; j++) {
+                        tmpItem = mappedItems[j];
+                        tmpItem.index(tmpItem.index.peek() + 1);
+                    }
+
                     this.valueAdded(value, index, item.mappedValue, item);
                 }
                 offset++;
@@ -69,7 +87,12 @@
                     if (item.computed) {
                         item.computed.dispose();
                     }
-                    deletedIndex(mappedItems, "index", index + offset);
+
+                    for (var j = index + offset + 1, len = mappedItems.length; j < len; j++) {
+                        tmpItem = mappedItems[j];
+                        tmpItem.index(tmpItem.index.peek() - 1);
+                    }
+
                     this.valueDeleted(value, index + offset, item.mappedValue, item);
                 }
                 offset--;
@@ -357,7 +380,7 @@
                 this.updateMapping();
 
             } else if (!shouldBeVisible && currentlyVisible) {
-                this.makeInvisible(value, item.index, item[this.mappedIndexProp]);
+                this.makeInvisible(value, item.index.peek(), item[this.mappedIndexProp]);
             }
         },
         makeInvisible: function (value, index, mappedIndex) {
@@ -436,7 +459,7 @@
             var groups = this.groups,
                 oldGroup = groups[oldGroupKey];
 
-            oldGroup.makeInvisible(value, item.index, item[oldGroup.mappedIndexProp]);
+            oldGroup.makeInvisible(value, item.index.peek(), item[oldGroup.mappedIndexProp]);
             groups[newGroupKey].updateMapping();
 
             if (!oldGroup.transformedArray.length) {
@@ -474,7 +497,7 @@
             this.transform.notifySubscribers(transformedArray);
         },
         valueMutated: function (value, newMappedValue, oldMappedValue, item) {
-            var transformedArray = this.transformedArray, index = item.index;
+            var transformedArray = this.transformedArray, index = item.index.peek();
             transformedArray.splice(index, 1);
             transformedArray.splice(index, 0, newMappedValue);
             this.transform.notifySubscribers(transformedArray);

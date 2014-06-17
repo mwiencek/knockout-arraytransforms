@@ -114,7 +114,7 @@ describe("sortBy", function () {
             expectedIndex = 0;
 
         a.sortBy(function (x, i) {
-            expect(i).toBe(expectedIndex++);
+            expect(i.peek()).toBe(expectedIndex++);
         });
     });
 
@@ -270,7 +270,7 @@ describe("filter", function () {
             expectedIndex = 0;
 
         a.filter(function (x, i) {
-            expect(i).toBe(expectedIndex++);
+            expect(i.peek()).toBe(expectedIndex++);
         });
     });
 
@@ -423,7 +423,7 @@ describe("map", function () {
             expectedIndex = 0;
 
         a.map(function (x, i) {
-            expect(i).toBe(expectedIndex++);
+            expect(i.peek()).toBe(expectedIndex++);
         });
     });
 });
@@ -560,7 +560,7 @@ describe("groupBy", function () {
             expectedIndex = 0;
 
         a.groupBy(function (x, i) {
-            expect(i).toBe(expectedIndex++);
+            expect(i.peek()).toBe(expectedIndex++);
         });
     });
 
@@ -732,7 +732,7 @@ describe("any", function () {
             expectedIndex = 0;
 
         a.any(function (x, i) {
-            expect(i).toBe(expectedIndex++);
+            expect(i.peek()).toBe(expectedIndex++);
         });
     });
 
@@ -861,7 +861,7 @@ describe("all", function () {
             expectedIndex = 0;
 
         a.all(function (x, i) {
-            expect(i).toBe(expectedIndex++);
+            expect(i.peek()).toBe(expectedIndex++);
         });
     });
 
@@ -1076,7 +1076,7 @@ describe("chaining", function () {
         var a = ko.observableArray([70, 69, 68]),
             b = a.sortBy(),
             c = b.all(function (x, i) {
-                var prev = b()[i - 1];
+                var prev = b()[i() - 1];
                 return prev === undefined || (x - prev) === 1;
             });
 
@@ -1090,7 +1090,7 @@ describe("chaining", function () {
         var a = ko.observableArray([70, 69, 68]),
             b = a.sortBy(),
             c = b.any(function (x, i) {
-                var prev = b()[i - 1];
+                var prev = b()[i() - 1];
                 return prev !== undefined && (x - prev) === 1;
             });
 
