@@ -886,19 +886,60 @@ describe("chaining", function () {
         var a = ko.observableArray([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75]),
             b = a.filter(greaterThan69).filter(evenDistanceFrom65);
 
+        var changes = [];;
+        b.subscribe(function (x) { changes.push.apply(changes, x) }, null, "arrayChange");
+
         expect(b()).toEqual([71, 73, 75]);
 
         a.reverse();
         expect(b()).toEqual([75, 73, 71]);
+        expect(changes).toEqual([
+            { status: "deleted", index: 2, moved: 0, value: 75 },
+            { status: "added", index: 0, moved: 2, value: 75 },
+            { status: "deleted", index: 2, moved: 1, value: 73 },
+            { status: "added", index: 1, moved: 2, value: 73 }
+        ]);
 
+        changes = [];
         a.push(73);
         expect(b()).toEqual([75, 73, 71, 73]);
+        expect(changes).toEqual([
+            { status: "added", index: 3, value: 73 },
+        ]);
 
+        changes = [];
         a.unshift(73);
         expect(b()).toEqual([73, 75, 73, 71, 73]);
+        expect(changes).toEqual([
+            { status: "added", index: 0, value: 73 },
+        ]);
 
+        changes = [];
         a.removeAll([73]);
         expect(b()).toEqual([75, 71]);
+        expect(changes).toEqual([
+            { status: "deleted", index: 0, value: 73 },
+            { status: "deleted", index: 1, value: 73 },
+            { status: "deleted", index: 2, value: 73 }
+        ]);
+    });
+
+    it("works between filter -> filter -> filter", function () {
+        var numbers = [];
+
+        for (var i = 0; i < 1000; i++) {
+            numbers.push(i + 1);
+        }
+
+        var a = ko.observableArray(numbers),
+            b = a.filter(function (x) { return x % 3 === 0 }),
+            c = b.filter(function (x) { return x % 5 === 0 }),
+            d = c.filter(function (x) { return x % 7 === 0 });
+
+        expect(d()).toEqual([105, 210, 315, 420, 525, 630, 735, 840, 945]);
+
+        a.reverse();
+        expect(d()).toEqual([945, 840, 735, 630, 525, 420, 315, 210, 105]);
     });
 
     it("works between filter -> sortBy", function () {
