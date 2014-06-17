@@ -433,27 +433,13 @@
                 this.transform.push(object);
             }
 
-            for (var key in groups) {
-                groups[key].valueAdded(value, index, key === groupKey, item);
-            }
+            groups[groupKey].valueAdded(value, index, true, item);
         },
         valueDeleted: function (value, index, groupKey, item) {
-            groupKey = String(groupKey);
-
-            var groups = this.groups;
-
-            for (var key in groups) {
-                groups[key].valueDeleted(value, index, key === groupKey, item);
-            }
+            this.groups[groupKey].valueDeleted(value, index, true, item);
         },
         valueMoved: function (value, to, from, groupKey, item) {
-            groupKey = String(groupKey);
-
-            var groups = this.groups;
-
-            for (var key in groups) {
-                groups[key].valueMoved(value, to, from, key === groupKey, item);
-            }
+            this.groups[groupKey].valueMoved(value, to, from, true, item);
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
             var groups = this.groups,
