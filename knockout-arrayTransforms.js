@@ -100,28 +100,6 @@
         }
     };
 
-    function updateIndex(items, prop, start, end, offset) {
-        while (start <= end) {
-            items[start++][prop] += offset;
-        }
-    }
-
-    function addedIndex(array, prop, index) {
-        updateIndex(array, prop, index + 1, array.length - 1, 1);
-    }
-
-    function deletedIndex(array, prop, index) {
-        updateIndex(array, prop, index, array.length - 1, -1);
-    }
-
-    function movedIndex(array, prop, to, from) {
-        if (to > from) {
-            updateIndex(array, prop, from, to - 1, -1);
-        } else {
-            updateIndex(array, prop, to + 1, from, 1);
-        }
-    }
-
     function emptyObject() {
         return Object.create ? Object.create(null) : {};
     }
@@ -228,8 +206,12 @@
 
             item.mappedIndex = mappedIndex;
             sortedItems.splice(mappedIndex, 0, item);
-            addedIndex(sortedItems, "mappedIndex", mappedIndex);
             keyCounts[sortKey] = (keyCounts[sortKey] || 0) + 1;
+
+            for (var i = mappedIndex + 1, len = sortedItems.length; i < len; i++) {
+                sortedItems[i].mappedIndex++;
+            }
+
             this.transform.splice(mappedIndex, 0, value);
         },
         valueDeleted: function (value, index, sortKey, item) {
@@ -237,8 +219,12 @@
                 sortedItems = this.sortedItems;
 
             sortedItems.splice(mappedIndex, 1);
-            deletedIndex(sortedItems, "mappedIndex", mappedIndex);
             this.keyCounts[sortKey]--;
+
+            for (var i = mappedIndex, len = sortedItems.length; i < len; i++) {
+                sortedItems[i].mappedIndex--;
+            }
+
             this.transform.splice(mappedIndex, 1);
         },
         valueMoved: function (value, to, from, sortKey, item) {
@@ -284,9 +270,17 @@
             item.mappedIndex = newIndex;
             sortedItems.splice(newIndex, 0, item);
 
-            movedIndex(sortedItems, "mappedIndex", newIndex, oldIndex);
-            transformedArray.splice(newIndex, 0, value);
+            if (newIndex > oldIndex) {
+                for (var i = oldIndex; i < newIndex; i++) {
+                    sortedItems[i].mappedIndex--;
+                }
+            } else {
+                for (var i = newIndex + 1; i <= oldIndex; i++) {
+                    sortedItems[i].mappedIndex++;
+                }
+            }
 
+            transformedArray.splice(newIndex, 0, value);
             this.transform.notifySubscribers(transformedArray);
         },
         sortedIndexOf: function (key, value, item) {
@@ -384,8 +378,14 @@
             }
         },
         makeInvisible: function (value, index, mappedIndex) {
+            var mappedItems = this.mappedItems,
+                mappedIndexProp = this.mappedIndexProp;
+
+            for (var i = index, len = mappedItems.length; i < len; i++) {
+                mappedItems[i][mappedIndexProp]--;
+            }
+
             this.transform.splice(mappedIndex, 1);
-            deletedIndex(this.mappedItems, this.mappedIndexProp, index);
         },
         updateMapping: updateFilterMapping,
         getVisibility: Boolean
