@@ -18,6 +18,7 @@
     function applyChanges(changes) {
         var mappedItems = this.mappedItems,
             moves = emptyObject(),
+            minIndex = 0,
             offset = 0;
 
         beginChanges(this);
@@ -33,6 +34,8 @@
                 moved = change.moved,
                 value = change.value,
                 item = change.mappedItem;
+
+            minIndex = Math.min(minIndex, index);
 
             if (moved !== undefined) {
                 // For added statuses, index is a position in the new
@@ -50,10 +53,11 @@
 
                     if (to !== from) {
                         item = mappedItems[from];
+
                         mappedItems.splice(from, 1)
                         mappedItems.splice(to, 0, item);
                         this.valueMoved(value, to, from, item.mappedValue, item);
-                        item.index(to);
+                        item.currentIndex = to;
 
                         if (to > from) {
                             updateIndexes(mappedItems, from, to - 1, -1);
@@ -68,6 +72,8 @@
                 if (moved === undefined) {
                     item = emptyObject();
                     item.index = ko.observable(index);
+                    item.index.isDifferent = isDifferent;
+                    item.currentIndex = index;
                     item.value = value;
                     mapValue(this, item);
                     mappedItems.splice(index, 0, item);
@@ -87,6 +93,11 @@
                 }
                 offset--;
             }
+        }
+
+        for (var i = minIndex, len = mappedItems.length, item; i < len; i++) {
+            item = mappedItems[i];
+            item.index(item.currentIndex);
         }
 
         endChanges(this);
@@ -115,8 +126,7 @@
 
     function updateIndexes(items, start, end, offset) {
         while (start <= end) {
-            var item = items[start++];
-            item.index(item.index.peek() + offset);
+            items[start++].currentIndex += offset;
         }
     }
 
@@ -134,6 +144,8 @@
     }
 
     function exactlyEqual(a, b) { return a === b }
+
+    function isDifferent(a, b) { return a !== b }
 
     function mapValue(state, item) {
         var callback = state.callback;
@@ -440,7 +452,7 @@
             }
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible, item) {
-            var index = item.index.peek();
+            var index = item.currentIndex;
             this.valueAdded(value, index, shouldBeVisible, item);
             this.valueDeleted(value, index, currentlyVisible, item);
         }
@@ -518,9 +530,7 @@
             }
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
-            var groups = this.groups,
-                index = item.index.peek(),
-                group;
+            var groups = this.groups, index = item.currentIndex, group;
 
             for (var key in groups) {
                 group = groups[key];
@@ -560,7 +570,7 @@
             spliceToFrom(this, to, from, mappedValue);
         },
         valueMutated: function (value, newMappedValue, oldMappedValue, item) {
-            var index = item.index.peek();
+            var index = item.currentIndex;
             spliceToFrom(this, index, index, newMappedValue);
         }
     });
