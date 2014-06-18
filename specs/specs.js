@@ -310,6 +310,27 @@ describe("filter", function () {
         a(orderedInts.slice(0).reverse());
         expect(b()).toEqual([8, 6, 4, 2]);
     });
+
+    it("allows modifying the original array inside a subscription", function () {
+        var original = [{ visible: ko.observable(true) }],
+            a = ko.observableArray(original.slice(0)),
+            b = a.filter("visible"),
+            toAdd = { visible: ko.observable(true) };
+
+        b.subscribe(function (values) {
+            if (!values.length) {
+                a.push(toAdd);
+            } else if (values.length > 1) {
+                a.remove(toAdd);
+            }
+        });
+
+        original[0].visible(false);
+        expect(b()).toEqual([toAdd]);
+
+        original[0].visible(true);
+        expect(b()).toEqual([original[0]]);
+    });
 });
 
 
@@ -792,15 +813,15 @@ describe("groupBy", function () {
             a = ko.observableArray(objects.slice(0)),
             b = a.groupBy(function (object) { return isEven(object.num()) });
 
-        var evenChanges = [], oddChanges = [];
-        b()[1].values.subscribe(function (changes) { evenChanges.push.apply(evenChanges, changes) }, null, "arrayChange");
-        b()[0].values.subscribe(function (changes) { oddChanges.push.apply(oddChanges, changes) }, null, "arrayChange");
+        var evenChanges, oddChanges;
+        b()[1].values.subscribe(function (x) { evenChanges = x }, null, "arrayChange");
+        b()[0].values.subscribe(function (x) { oddChanges = x }, null, "arrayChange");
 
         a.reverse();
 
         expect(ko.toJS(evenChanges)).toEqual([
-            { status: "deleted", value: { num: 4 }, index: 1, moved: 0 },
-            { status: "added", value: { num: 4 }, index: 0, moved: 1 }
+            { status: "deleted", value: { num: 2 }, index: 0, moved: 1 },
+            { status: "added", value: { num: 2 }, index: 1, moved: 0 }
         ]);
 
         expect(ko.toJS(oddChanges)).toEqual([
@@ -808,18 +829,16 @@ describe("groupBy", function () {
             { status: "added", value: { num: 1 }, index: 1, moved: 0 }
         ]);
 
-        evenChanges = [];
-        oddChanges = [];
         a.removeAll(objects);
 
         expect(evenChanges).toEqual([
             { status: "deleted", value: objects[3], index: 0 },
-            { status: "deleted", value: objects[1], index: 0 }
+            { status: "deleted", value: objects[1], index: 1 }
         ]);
 
         expect(oddChanges).toEqual([
             { status: "deleted", value: objects[2], index: 0 },
-            { status: "deleted", value: objects[0], index: 0 }
+            { status: "deleted", value: objects[0], index: 1 }
         ]);
     });
 });
@@ -1129,41 +1148,38 @@ describe("chaining", function () {
         var a = ko.observableArray([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75]),
             b = a.filter(greaterThan69).filter(evenDistanceFrom65);
 
-        var changes = [];;
-        b.subscribe(function (x) { changes.push.apply(changes, x) }, null, "arrayChange");
+        var changes;
+        b.subscribe(function (x) { changes = x }, null, "arrayChange");
 
         expect(b()).toEqual([71, 73, 75]);
 
         a.reverse();
         expect(b()).toEqual([75, 73, 71]);
         expect(changes).toEqual([
-            { status: "deleted", index: 2, moved: 0, value: 75 },
+            { status: "deleted", index: 0, moved: 2, value: 71 },
             { status: "added", index: 0, moved: 2, value: 75 },
-            { status: "deleted", index: 2, moved: 1, value: 73 },
-            { status: "added", index: 1, moved: 2, value: 73 }
+            { status: "deleted", index: 2, moved: 0, value: 75 },
+            { status: "added", index: 2, moved: 0, value: 71 }
         ]);
 
-        changes = [];
         a.push(73);
         expect(b()).toEqual([75, 73, 71, 73]);
         expect(changes).toEqual([
             { status: "added", index: 3, value: 73 },
         ]);
 
-        changes = [];
         a.unshift(73);
         expect(b()).toEqual([73, 75, 73, 71, 73]);
         expect(changes).toEqual([
             { status: "added", index: 0, value: 73 },
         ]);
 
-        changes = [];
         a.removeAll([73]);
         expect(b()).toEqual([75, 71]);
         expect(changes).toEqual([
             { status: "deleted", index: 0, value: 73 },
-            { status: "deleted", index: 1, value: 73 },
-            { status: "deleted", index: 2, value: 73 }
+            { status: "deleted", index: 2, value: 73 },
+            { status: "deleted", index: 4, value: 73 }
         ]);
     });
 
