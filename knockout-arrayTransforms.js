@@ -105,8 +105,10 @@
 
         if (array && (--state.mutationDepth === 0)) {
             var changes = compareArrays(state.previousArray, array, { sparse: true });
-            state.transform.notifySubscribers(array);
-            state.transform.notifySubscribers(changes, arrayChangeEvent);
+            if (changes.length) {
+                state.transform.notifySubscribers(array);
+                state.transform.notifySubscribers(changes, arrayChangeEvent);
+            }
             state.previousArray = null;
         }
     }
