@@ -331,6 +331,14 @@ describe("filter", function () {
         original[0].visible(true);
         expect(b()).toEqual([original[0]]);
     });
+
+    it("can insert a new value at index 0 before two swapped values", function () {
+        var a = ko.observableArray([0, 1, 2, 3]),
+            b = a.filter(isEven);
+
+        a([4, 1, 0, 2, 3]);
+        expect(b()).toEqual([4, 0, 2]);
+    });
 });
 
 
@@ -625,6 +633,14 @@ describe("map", function () {
 
         animals.reverse();
         expect(ranks()).toEqual(["goat: 1", "dog: 2", "cat: 3"]);
+    });
+
+    it("can insert a new value at index 0 before two swapped values", function () {
+        var a = ko.observableArray([0, 1, 2, 3]),
+            b = a.map(function (x) { return x + 1 });
+
+        a([4, 1, 0, 2, 3]);
+        expect(b()).toEqual([5, 2, 1, 3, 4]);
     });
 });
 

@@ -33,71 +33,53 @@
             var index = change.index,
                 moved = change.moved,
                 value = change.value,
-                item = change.mappedItem;
+                isMove = moved !== undefined,
+                item = null;
 
             minIndex = Math.min(minIndex, index);
 
-            if (moved !== undefined) {
-                // For added statuses, index is a position in the new
-                // array and moved is a position in the old array. For
-                // deleted statuses, it's the opposite.
-                if (status === "added") {
-                    var to = index, from = moved + offset;
-
-                } else if (status === "deleted") {
-                    var to = moved, from = index + offset;
-                }
-
-                if (moves[to] === undefined) {
-                    moves[to] = true;
-
-                    if (to !== from) {
-                        item = mappedItems[from];
-
-                        mappedItems.splice(from, 1)
-                        mappedItems.splice(to, 0, item);
-                        this.valueMoved(value, to, from, item.mappedValue, item);
-                        item.currentIndex = to;
-
-                        if (to > from) {
-                            updateIndexes(mappedItems, from, to - 1, -1);
-                        } else {
-                            updateIndexes(mappedItems, to + 1, from, 1);
-                        }
-                    }
-                }
-            }
-
             if (status === "added") {
-                if (moved === undefined) {
+                var from = moved + offset;
+
+                if (isMove) {
+                    item = moves[index];
+
+                    if (!item) {
+                        item = moves[index] = mappedItems[from];
+                        mappedItems[from] = null;
+                    }
+                } else {
                     item = emptyObject();
                     item.index = ko.observable(index);
                     item.index.isDifferent = isDifferent;
-                    item.currentIndex = index;
                     item.value = value;
                     mapValue(this, item);
-                    mappedItems.splice(index, 0, item);
-                    this.valueAdded(value, index, item.mappedValue, item);
-                    updateIndexes(mappedItems, index + 1, mappedItems.length - 1, 1);
                 }
+
+                mappedItems.splice(index, 0, item);
+                this.valueAdded(value, index, item.mappedValue, item);
                 offset++;
 
             } else if (status === "deleted") {
-                if (moved === undefined) {
-                    item = mappedItems.splice(index + offset, 1)[0];
+                var from = index + offset;
+
+                if (isMove) {
+                    item = moves[moved] || (moves[moved] = mappedItems[from]);
+                } else {
+                    item = mappedItems[from];
                     if (item.computed) {
                         item.computed.dispose();
                     }
-                    this.valueDeleted(value, index + offset, item.mappedValue, item);
-                    updateIndexes(mappedItems, index + offset, mappedItems.length - 1, -1);
                 }
+
+                mappedItems.splice(from, 1);
+                this.valueDeleted(value, from, item.mappedValue, item);
                 offset--;
             }
         }
 
         for (var i = minIndex, len = mappedItems.length, item; i < len; i++) {
-            item = mappedItems[i];
-            item.index(item.currentIndex);
+            mappedItems[i].index(i);
         }
 
         endChanges(this);
@@ -124,21 +106,6 @@
         }
     }
 
-    function updateIndexes(items, start, end, offset) {
-        while (start <= end) {
-            items[start++].currentIndex += offset;
-        }
-    }
-
-    function spliceToFrom(state, to, from, addedValue) {
-        var array = state.transformedArray;
-
-        if (addedValue !== array[from] || to !== from) {
-            array.splice(from, 1);
-            array.splice(to, 0, addedValue);
-        }
-    }
-
     function emptyObject() {
         return Object.create ? Object.create(null) : {};
     }
@@ -146,6 +113,13 @@
     function exactlyEqual(a, b) { return a === b }
 
     function isDifferent(a, b) { return a !== b }
+
+    function indexOf(array, item) {
+        for (var i = 0, len = array.length; i < len; i++) {
+            if (array[i] === item) return i;
+        }
+        return -1;
+    }
 
     function mapValue(state, item) {
         var callback = state.callback;
@@ -254,42 +228,23 @@
         },
         valueAdded: function (value, index, sortKey, item) {
             var mappedIndex = this.sortedIndexOf(sortKey, value, item),
-                sortedItems = this.sortedItems,
-                keyCounts = this.keyCounts;
+                sortedItems = this.sortedItems;
 
-            item.mappedIndex = mappedIndex;
+            var keyCounts = this.keyCounts;
             sortedItems.splice(mappedIndex, 0, item);
             keyCounts[sortKey] = (keyCounts[sortKey] || 0) + 1;
-
-            for (var i = mappedIndex + 1, len = sortedItems.length; i < len; i++) {
-                sortedItems[i].mappedIndex++;
-            }
-
             this.transformedArray.splice(mappedIndex, 0, value);
         },
         valueDeleted: function (value, index, sortKey, item) {
-            var mappedIndex = item.mappedIndex,
-                sortedItems = this.sortedItems;
+            var sortedItems = this.sortedItems,
+                mappedIndex = indexOf(sortedItems, item);
 
             sortedItems.splice(mappedIndex, 1);
             this.keyCounts[sortKey]--;
-
-            for (var i = mappedIndex, len = sortedItems.length; i < len; i++) {
-                sortedItems[i].mappedIndex--;
-            }
-
             this.transformedArray.splice(mappedIndex, 1);
         },
-        valueMoved: function (value, to, from, sortKey, item) {
-            var oldIndex = item.mappedIndex,
-                newIndex = this.sortedIndexOf(sortKey, value, item);
-
-            if (oldIndex !== newIndex) {
-                this.moveValue(value, sortKey, oldIndex, newIndex, item);
-            }
-        },
         valueMutated: function (value, newKey, oldKey, item) {
-            var oldIndex = item.mappedIndex,
+            var oldIndex = indexOf(this.sortedItems, item),
                 newIndex = this.sortedIndexOf(newKey, value, item);
 
             // The mappedItems array hasn't been touched yet, so adjust for that
@@ -298,32 +253,19 @@
             }
 
             if (oldIndex !== newIndex) {
-                this.moveValue(value, newKey, oldIndex, newIndex, item);
+                var array = this.transformedArray,
+                    sortedItems = this.sortedItems;
+
+                sortedItems.splice(oldIndex, 1);
+                sortedItems.splice(newIndex, 0, item);
+
+                array.splice(oldIndex, 1);
+                array.splice(newIndex, 0, value);
 
                 var keyCounts = this.keyCounts;
                 keyCounts[oldKey]--;
                 keyCounts[newKey] = (keyCounts[newKey] || 0) + 1;
             }
-        },
-        moveValue: function (value, sortKey, oldIndex, newIndex, item) {
-            var sortedItems = this.sortedItems,
-                transformedArray = this.transformedArray;
-
-            sortedItems.splice(oldIndex, 1);
-            sortedItems.splice(newIndex, 0, item);
-            item.mappedIndex = newIndex;
-
-            if (newIndex > oldIndex) {
-                for (var i = oldIndex; i < newIndex; i++) {
-                    sortedItems[i].mappedIndex--;
-                }
-            } else {
-                for (var i = newIndex + 1; i <= oldIndex; i++) {
-                    sortedItems[i].mappedIndex++;
-                }
-            }
-
-            spliceToFrom(this, newIndex, oldIndex, value);
         },
         sortedIndexOf: function (key, value, item) {
             var sortedItems = this.sortedItems,
@@ -353,8 +295,9 @@
                 var mappedItems = this.mappedItems, mappedItem;
 
                 for (var i = 0; i < length; i++) {
-                    mappedItem = mappedItems[i];
-
+                    if (!(mappedItem = mappedItems[i])) {
+                        continue;
+                    }
                     if (mappedItem === item) {
                         break;
                     }
@@ -389,23 +332,28 @@
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, visible, item) {
+            visible = this.getVisibility(visible);
+
             var mappedItems = this.mappedItems,
-                mappedIndexProp = this.mappedIndexProp,
-                mappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, index);
+                mappedIndexProp = this.mappedIndexProp;
 
-            item[mappedIndexProp] = mappedIndex;
-
-            if (this.getVisibility(visible)) {
-                for (var i = index + 1, len = mappedItems.length; i < len; i++) {
-                    mappedItems[i][mappedIndexProp]++;
+            if (visible) {
+                for (var i = index + 1, len = mappedItems.length, tmp; i < len; i++) {
+                    (tmp = mappedItems[i]) && tmp[mappedIndexProp]++;
                 }
+            }
+
+            var mappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, index);
+            if (visible) {
                 this.transformedArray.splice(mappedIndex, 0, value);
             }
+            item[mappedIndexProp] = mappedIndex;
         },
         valueDeleted: function (value, index, visible, item) {
             if (this.getVisibility(visible)) {
                 var mappedItems = this.mappedItems,
-                    mappedIndexProp = this.mappedIndexProp;
+                    mappedIndexProp = this.mappedIndexProp,
+                    mappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, index);
 
                 // In normal cases, this item will already be spliced out of
                 // mappedItems, because it was removed from the original array.
@@ -419,40 +367,16 @@
                 if (mappedItems[index] === item) {
                     index++;
                 }
-                for (var i = index, len = mappedItems.length; i < len; i++) {
-                    mappedItems[i][mappedIndexProp]--;
-                }
-                this.transformedArray.splice(item[mappedIndexProp], 1);
-            }
-        },
-        valueMoved: function (value, to, from, visible, item) {
-            var mappedItems = this.mappedItems,
-                mappedIndexProp = this.mappedIndexProp,
-                fromMappedIndex = item[mappedIndexProp],
-                toMappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, to);
 
-            // Compensate for the fact that indexes haven't been decremented
-            // yet below, so filterIndexOf is biased.
-            if (to > from) {
-                toMappedIndex--;
-            }
-            item[mappedIndexProp] = toMappedIndex;
-
-            if (this.getVisibility(visible)) {
-                if (to > from) {
-                    for (var i = from; i < to; i++) {
-                        mappedItems[i][mappedIndexProp]--;
-                    }
-                } else {
-                    for (var i = to + 1; i <= from; i++) {
-                        mappedItems[i][mappedIndexProp]++;
-                    }
+                for (var i = index, len = mappedItems.length, tmp; i < len; i++) {
+                    (tmp = mappedItems[i]) && tmp[mappedIndexProp]--;
                 }
-                spliceToFrom(this, toMappedIndex, fromMappedIndex, value);
+
+                this.transformedArray.splice(mappedIndex, 1);
             }
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible, item) {
-            var index = item.currentIndex;
+            var index = indexOf(this.mappedItems, item);
             this.valueAdded(value, index, shouldBeVisible, item);
             this.valueDeleted(value, index, currentlyVisible, item);
         }
@@ -522,15 +446,10 @@
                 groups[key].valueDeleted(value, index, groupKey, item);
             }
         },
-        valueMoved: function (value, to, from, groupKey, item) {
-            var groups = this.groups;
-
-            for (var key in groups) {
-                groups[key].valueMoved(value, to, from, groupKey, item);
-            }
-        },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
-            var groups = this.groups, index = item.currentIndex, group;
+            var groups = this.groups,
+                index = indexOf(this.mappedItems, item),
+                group;
 
             for (var key in groups) {
                 group = groups[key];
@@ -566,12 +485,8 @@
         valueDeleted: function (value, index) {
             this.transformedArray.splice(index, 1);
         },
-        valueMoved: function (value, to, from, mappedValue) {
-            spliceToFrom(this, to, from, mappedValue);
-        },
         valueMutated: function (value, newMappedValue, oldMappedValue, item) {
-            var index = item.currentIndex;
-            spliceToFrom(this, index, index, newMappedValue);
+            this.transformedArray[indexOf(this.mappedItems, item)] = newMappedValue;
         }
     });
 
@@ -586,7 +501,6 @@
         valueDeleted: function (value, index, truthiness) {
             this.valueMutated(null, false, truthiness);
         },
-        valueMoved: function () {},
         valueMutated: function (value, newTruthiness, oldTruthiness) {
             if (newTruthiness && !oldTruthiness) {
                 this.truthinessCount++;
