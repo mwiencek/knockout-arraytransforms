@@ -313,6 +313,143 @@ describe("filter", function () {
 });
 
 
+describe("reject", function () {
+    it("filters an array’s initial contents", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.reject(isEven);
+
+        expect(b()).toEqual([1, 3, 5, 7, 9]);
+    });
+
+    it("filters values added via push", function () {
+        var a = ko.observableArray([]),
+            b = a.reject(isEven);
+
+        a.push.apply(a, orderedInts);
+        expect(b()).toEqual([1, 3, 5, 7, 9]);
+    });
+
+    it("filters values added via unshift", function () {
+        var a = ko.observableArray([]),
+            b = a.reject(isEven);
+
+        a.unshift.apply(a, orderedInts);
+        expect(b()).toEqual([1, 3, 5, 7, 9]);
+    });
+
+    it("filters values spliced to the beginning", function () {
+        var a = ko.observableArray([]),
+            b = a.reject(isEven);
+
+        for (var i = 0, len = orderedInts.length; i < len; i++) {
+            a.splice(0, 0, orderedInts[i]);
+        }
+
+        expect(b()).toEqual([9, 7, 5, 3, 1]);
+    });
+
+    it("filters values spliced to the end", function () {
+        var a = ko.observableArray([]),
+            b = a.reject(isEven);
+
+        for (var i = 0, len = orderedInts.length; i < len; i++) {
+            a.splice(i, 0, orderedInts[i]);
+        }
+
+        expect(b()).toEqual([1, 3, 5, 7, 9]);
+    });
+
+    it("removes values removed from the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.reject(isEven);
+
+        a.splice(0, 5);
+        expect(b()).toEqual([7, 9]);
+
+        a.splice(0, 4);
+        expect(b()).toEqual([]);
+    });
+
+    it("re-filters values when they change", function () {
+        var objects = [
+            { num: ko.observable(2) },
+            { num: ko.observable(4) },
+            { num: ko.observable(6) }
+        ];
+
+        var a = ko.observableArray(objects.slice(0)),
+            b = a.reject(function (object) { return object.num() % 2 === 0 });
+
+        expect(b()).toEqual([]);
+
+        objects[0].num(1);
+        expect(b()).toEqual([objects[0]]);
+
+        objects[1].num(3);
+        expect(b()).toEqual([objects[0], objects[1]]);
+
+        objects[2].num(5);
+        expect(b()).toEqual([objects[0], objects[1], objects[2]]);
+    });
+
+    it("only runs the filter function when it changes", function () {
+        var objects = [
+            { num: ko.observable(0) },
+            { num: ko.observable(1) }
+        ];
+
+        var spy0 = spyOn(objects[0], "num"),
+            spy1 = spyOn(objects[1], "num"),
+            a = ko.observableArray(objects.slice(0)),
+            b = a.reject(function (object) { return object.num() % 2 === 0 });
+
+        expect(spy0.calls.count()).toBe(1);
+        expect(spy1.calls.count()).toBe(1);
+
+        objects[0].num(2);
+        expect(spy0.calls.count()).toBe(2);
+        expect(spy1.calls.count()).toBe(1);
+
+        objects[1].num(4);
+        expect(spy0.calls.count()).toBe(2);
+        expect(spy1.calls.count()).toBe(2);
+    });
+
+    it("passes the value’s index as the second argument to the callback", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            expectedIndex = 0;
+
+        a.reject(function (x, i) {
+            expect(i.peek()).toBe(expectedIndex++);
+        });
+    });
+
+    it("re-filters values that depend on the index observable", function () {
+        var a = ko.observableArray(orderedInts.slice(0));
+
+        var b = a.reject(function (n, index) {
+            return index() % 2 === 0;
+        });
+
+        expect(b()).toEqual([2, 4, 6, 8]);
+
+        a.shift();
+        expect(b()).toEqual([3, 5, 7, 9]);
+
+        a.reverse();
+        expect(b()).toEqual([8, 6, 4, 2]);
+    });
+
+    it("moves values moved in the original array", function () {
+        var a = ko.observableArray(orderedInts.slice(0)),
+            b = a.reject(isEven);
+
+        a(orderedInts.slice(0).reverse());
+        expect(b()).toEqual([9, 7, 5, 3, 1]);
+    });
+});
+
+
 describe("map", function () {
     var squaredInts = [1, 4, 9, 16, 25, 36, 49, 64, 81],
         square = function (x) { return x * x };

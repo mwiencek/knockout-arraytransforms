@@ -367,8 +367,7 @@
         return mappedIndex;
     }
 
-    makeTransform({
-        name: "filter",
+    var filterOrReject = {
         mappedIndexProp: "mappedIndex",
         init: function () {
             return ko.observableArray([]);
@@ -380,7 +379,7 @@
 
             item[mappedIndexProp] = mappedIndex;
 
-            if (visible) {
+            if (this.getVisibility(visible)) {
                 for (var i = index + 1, len = mappedItems.length; i < len; i++) {
                     mappedItems[i][mappedIndexProp]++;
                 }
@@ -388,7 +387,7 @@
             }
         },
         valueDeleted: function (value, index, visible, item) {
-            if (visible) {
+            if (this.getVisibility(visible)) {
                 var mappedItems = this.mappedItems,
                     mappedIndexProp = this.mappedIndexProp;
 
@@ -423,7 +422,7 @@
             }
             item[mappedIndexProp] = toMappedIndex;
 
-            if (visible) {
+            if (this.getVisibility(visible)) {
                 if (to > from) {
                     for (var i = from; i < to; i++) {
                         mappedItems[i][mappedIndexProp]--;
@@ -437,15 +436,15 @@
             }
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible, item) {
-            if (shouldBeVisible && !currentlyVisible) {
-                this.valueAdded(value, item.index.peek(), true, item);
+            var index = item.index.peek();
+            this.valueAdded(value, index, shouldBeVisible, item);
+            this.valueDeleted(value, index, currentlyVisible, item);
+        }
+    };
 
-            } else if (!shouldBeVisible && currentlyVisible) {
-                this.valueDeleted(value, item.index.peek(), true, item);
-            }
-        },
-        getVisibility: Boolean
-    });
+    function boolNot(x) { return !x }
+    makeTransform(ko.utils.extend({ name: "filter", getVisibility: Boolean }, filterOrReject));
+    makeTransform(ko.utils.extend({ name: "reject", getVisibility: boolNot }, filterOrReject));
 
     function getGroupVisibility(groupKey) {
         return String(groupKey) === this.groupKey;
@@ -490,39 +489,32 @@
             }
 
             for (var key in groups) {
-                groups[key].valueAdded(value, index, key === groupKey, item);
+                groups[key].valueAdded(value, index, groupKey, item);
             }
         },
         valueDeleted: function (value, index, groupKey, item) {
-            groupKey = String(groupKey);
-
             var groups = this.groups;
 
             for (var key in groups) {
-                groups[key].valueDeleted(value, index, key === groupKey, item);
+                groups[key].valueDeleted(value, index, groupKey, item);
             }
         },
         valueMoved: function (value, to, from, groupKey, item) {
-            groupKey = String(groupKey);
-
             var groups = this.groups;
 
             for (var key in groups) {
-                groups[key].valueMoved(value, to, from, key === groupKey, item);
+                groups[key].valueMoved(value, to, from, groupKey, item);
             }
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
-            newGroupKey = String(newGroupKey);
-            oldGroupKey = String(oldGroupKey);
-
             var groups = this.groups,
                 index = item.index.peek(),
                 group;
 
             for (var key in groups) {
                 group = groups[key];
-                group.valueDeleted(value, index, key === oldGroupKey, item);
-                group.valueAdded(value, index, key === newGroupKey, item);
+                group.valueDeleted(value, index, oldGroupKey, item);
+                group.valueAdded(value, index, newGroupKey, item);
 
                 if (!group.transformedArray.length) {
                     this.deleteGroup(key);

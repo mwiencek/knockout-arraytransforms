@@ -1,6 +1,6 @@
 {
     "name": "knockout-arrayTransforms",
-    "description": "Efficient transformations of observable arrays (sortBy, map, filter, groupBy, any/some, all/every).",
+    "description": "Efficient transformations of observable arrays (sortBy, map, filter/reject, groupBy, any/some, all/every).",
     "keywords": ["knockout", "observableArray"],
     "version": "0.4.0",
     "main": "knockout-arrayTransforms.js",
