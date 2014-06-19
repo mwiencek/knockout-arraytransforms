@@ -860,6 +860,24 @@ describe("groupBy", function () {
             { status: "deleted", value: objects[0], index: 1 }
         ]);
     });
+
+    it("can add a group via a mutation", function () {
+        var objects = [
+                { num: ko.observable(1) },
+                { num: ko.observable(2) },
+                { num: ko.observable(3) }
+            ],
+            a = ko.observableArray(objects.slice(0)),
+            b = a.groupBy(function (x) { return x.num() });
+
+        objects[1].num(5);
+
+        expect(ko.toJS(b())).toEqual([
+            { key: "1", values: [{ num: 1 }] },
+            { key: "3", values: [{ num: 3 }] },
+            { key: "5", values: [{ num: 5 }] }
+        ]);
+    });
 });
 
 

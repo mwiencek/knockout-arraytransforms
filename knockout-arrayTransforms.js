@@ -455,15 +455,13 @@
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
             var groups = this.groups,
-                index = indexOf(this.mappedItems, item),
-                group;
+                index = indexOf(this.mappedItems, item);
+
+            this.valueDeleted(value, index, oldGroupKey, item);
+            this.valueAdded(value, index, newGroupKey, item);
 
             for (var key in groups) {
-                group = groups[key];
-                group.valueDeleted(value, index, oldGroupKey, item);
-                group.valueAdded(value, index, newGroupKey, item);
-
-                if (!group.transformedArray.length) {
+                if (!groups[key].transformedArray.length) {
                     this.deleteGroup(key);
                 }
             }
