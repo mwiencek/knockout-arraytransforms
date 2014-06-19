@@ -315,6 +315,7 @@ describe("filter", function () {
         var original = [{ visible: ko.observable(true) }],
             a = ko.observableArray(original.slice(0)),
             b = a.filter("visible"),
+            c = b.map(),
             toAdd = { visible: ko.observable(true) };
 
         b.subscribe(function (values) {
@@ -327,9 +328,11 @@ describe("filter", function () {
 
         original[0].visible(false);
         expect(b()).toEqual([toAdd]);
+        expect(c()).toEqual(b());
 
         original[0].visible(true);
         expect(b()).toEqual([original[0]]);
+        expect(c()).toEqual(b());
     });
 
     it("can insert a new value at index 0 before two swapped values", function () {
@@ -1412,7 +1415,7 @@ describe("chaining", function () {
 
         expect(c()).toBe(true);
 
-        a(70, 68, 66);
+        a([70, 68, 66]);
         expect(c()).toBe(false);
     });
 
@@ -1453,6 +1456,42 @@ describe("chaining", function () {
             { key: "2", values: [{ a: 2, b: 1 }, { a: 2, b: 2 }] },
             { key: "1", values: [{ a: 1, b: 3 }, { a: 1, b: 4 }] }
         ]);
+    });
+});
+
+
+describe("all transformations", function () {
+
+    it("can map changes that trigger nested notifications", function () {
+        var aCount = 0,
+            bCount = 0,
+            cCount = 0,
+            a = ko.observableArray([]),
+            b = a.map(),
+            c = b.map();
+
+        a.subscribe(function () {
+            if (aCount < 3) {
+                a.push("a" + (aCount++));
+            }
+        });
+
+        b.subscribe(function () {
+            if (bCount < 3) {
+                a.push("b" + (bCount++));
+            }
+        });
+
+        c.subscribe(function () {
+            if (cCount < 3) {
+                a.push("c" + (cCount++));
+            }
+        });
+
+        a.push("hello");
+        expect(a()).toEqual(["hello", "b0", "a0", "a1", "a2", "c0", "b1", "c1", "b2", "c2"]);
+        expect(b()).toEqual(a());
+        expect(c()).toEqual(b());
     });
 });
 

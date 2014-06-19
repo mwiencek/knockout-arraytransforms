@@ -21,8 +21,6 @@
             minIndex = 0,
             offset = 0;
 
-        beginChanges(this);
-
         for (var i = 0, change; change = changes[i]; i++) {
             var status = change.status;
 
@@ -82,27 +80,41 @@
             mappedItems[i].index(i);
         }
 
-        endChanges(this);
+        notifyChanges(this);
     };
 
-    function beginChanges(state) {
+    function notifyChanges(state) {
         var array = state.transformedArray;
 
-        if (array && (state.mutationDepth++ === 0)) {
-            state.previousArray = array.concat();
-        }
-    }
-
-    function endChanges(state) {
-        var array = state.transformedArray;
-
-        if (array && (--state.mutationDepth === 0)) {
+        if (array) {
             var changes = compareArrays(state.previousArray, array, { sparse: true });
             if (changes.length) {
+                state.previousArray = array.concat();
+
+                var original = state.original,
+                    notifySubscribers = original.notifySubscribers,
+                    previousOriginalArray = original.peek().concat(),
+                    pendingArrayChange = false;
+
+                original.notifySubscribers = function (valueToNotify, event) {
+                    if (event === "arrayChange") {
+                        pendingArrayChange = true;
+                    } else {
+                        notifySubscribers.apply(original, arguments);
+                    }
+                };
+
                 state.transform.notifySubscribers(array);
                 state.transform.notifySubscribers(changes, arrayChangeEvent);
+
+                original.notifySubscribers = notifySubscribers;
+                if (pendingArrayChange) {
+                    changes = compareArrays(previousOriginalArray, original.peek(), { sparse: true });
+                    if (changes.length) {
+                        original.notifySubscribers(changes, "arrayChange");
+                    }
+                }
             }
-            state.previousArray = null;
         }
     }
 
@@ -164,13 +176,13 @@
         item.mappedValue = observable.peek();
 
         observable.subscribe(function (newValue) {
-            beginChanges(self);
             self.valueMutated(item.value, newValue, item.mappedValue, item);
 
             // Must be updated after valueMutated because sortBy/filter/etc.
             // expect/need the old mapped value
             item.mappedValue = newValue;
-            endChanges(self);
+
+            notifyChanges(self);
         });
     }
 
@@ -182,7 +194,6 @@
         state.original = original;
         state.mappedItems = [];
         state.callback = callback;
-        state.mutationDepth = 0;
 
         var transform = state.init(options);
         state.transform = transform;
@@ -192,6 +203,7 @@
             // Writing to it normally isn't support anyway
             transform.subscribe = ko.observableArray.fn.subscribe;
             state.transformedArray = transform.peek();
+            state.previousArray = state.transformedArray.concat();
         }
     }
 
@@ -399,14 +411,10 @@
         applyChanges: function (changes) {
             var groups = this.groups;
 
-            for (var key in groups) {
-                beginChanges(groups[key]);
-            }
-
             applyChanges.call(this, changes);
 
             for (key in groups) {
-                endChanges(groups[key]);
+                notifyChanges(groups[key]);
 
                 if (!groups[key].transformedArray.length) {
                     this.deleteGroup(key);
@@ -426,7 +434,6 @@
                 group.mappedItems = this.mappedItems;
                 group.mappedIndexProp = "mappedIndex." + groupKey;
                 group.getVisibility = getGroupVisibility;
-                beginChanges(group);
 
                 var object = emptyObject();
                 object.key = groupKey;
