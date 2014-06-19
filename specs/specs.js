@@ -848,20 +848,30 @@ describe("groupBy", function () {
             { status: "added", value: { num: 1 }, index: 1, moved: 0 }
         ]);
 
+        objects[0].num(0);
+
+        expect(evenChanges).toEqual([
+            { status: "added", value: objects[0], index: 2 }
+        ]);
+
+        expect(oddChanges).toEqual([
+            { status: "deleted", value: objects[0], index: 1 }
+        ]);
+
         a.removeAll(objects);
 
         expect(evenChanges).toEqual([
             { status: "deleted", value: objects[3], index: 0 },
-            { status: "deleted", value: objects[1], index: 1 }
+            { status: "deleted", value: objects[1], index: 1 },
+            { status: "deleted", value: objects[0], index: 2 }
         ]);
 
         expect(oddChanges).toEqual([
-            { status: "deleted", value: objects[2], index: 0 },
-            { status: "deleted", value: objects[0], index: 1 }
+            { status: "deleted", value: objects[2], index: 0 }
         ]);
     });
 
-    it("can add a group via a mutation", function () {
+    it("can add a new group via mutation", function () {
         var objects = [
                 { num: ko.observable(1) },
                 { num: ko.observable(2) },
