@@ -229,7 +229,7 @@
             state.applyChanges(initialChanges);
             return state.transform;
         };
-    };
+    }
 
     makeTransform({
         name: "sortBy",
@@ -330,7 +330,7 @@
         var previousItem, mappedIndex = 0;
         if (index > 0) {
             previousItem = items[index - 1];
-            mappedIndex = previousItem[prop] || 0
+            mappedIndex = previousItem[prop] || 0;
             if (state.getVisibility(previousItem.mappedValue)) {
                 mappedIndex++;
             }
