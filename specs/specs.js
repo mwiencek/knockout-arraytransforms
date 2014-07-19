@@ -173,6 +173,37 @@ describe("sortBy", function () {
             expect(sorted[i]).toBe(original[order[i]]);
         }
     });
+
+    it("remains stably sorted after value mutations", function () {
+        var sortByFoo = ko.observable(true);
+
+        var original = [
+            { name: "A", foo: 4, bar: 3 },
+            { name: "B", foo: 3, bar: 5 },
+            { name: "C", foo: 5, bar: 4 },
+            { name: "D", foo: 2, bar: 2 },
+        ];
+
+        var sorted = ko.observableArray(original.slice(0))
+            .sortBy("name")
+            .sortBy("bar")
+            .sortBy(function (h) {
+                if (sortByFoo()) {
+                    return h.foo;
+                }
+                return 0;
+            });
+
+        // DBAC -> DACB
+        sortByFoo(false);
+
+        expect(sorted()).toEqual([
+            original[3],
+            original[0],
+            original[2],
+            original[1]
+        ]);
+    });
 });
 
 

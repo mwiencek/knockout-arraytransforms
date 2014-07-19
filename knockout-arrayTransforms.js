@@ -256,8 +256,12 @@
             this.transformedArray.splice(mappedIndex, 1);
         },
         valueMutated: function (value, newKey, oldKey, item) {
-            var oldIndex = indexOf(this.sortedItems, item),
+            var keyCounts = this.keyCounts,
+                oldIndex = indexOf(this.sortedItems, item),
                 newIndex = this.sortedIndexOf(newKey, value, item);
+
+            keyCounts[oldKey]--;
+            keyCounts[newKey] = (keyCounts[newKey] || 0) + 1;
 
             // The mappedItems array hasn't been touched yet, so adjust for that
             if (oldIndex < newIndex) {
@@ -273,10 +277,6 @@
 
                 array.splice(oldIndex, 1);
                 array.splice(newIndex, 0, value);
-
-                var keyCounts = this.keyCounts;
-                keyCounts[oldKey]--;
-                keyCounts[newKey] = (keyCounts[newKey] || 0) + 1;
             }
         },
         sortedIndexOf: function (key, value, item) {
