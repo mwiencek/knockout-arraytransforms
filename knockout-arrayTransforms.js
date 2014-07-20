@@ -1,4 +1,4 @@
-// knockout-arrayTransforms 0.5.0 (https://github.com/mwiencek/knockout-arrayTransforms)
+// knockout-arrayTransforms 0.5.1 (https://github.com/mwiencek/knockout-arrayTransforms)
 // Released under the MIT (X11) License; see the LICENSE file in the official code repository.
 
 (function (factory) {
