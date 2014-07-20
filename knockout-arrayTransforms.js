@@ -55,7 +55,7 @@
                 }
 
                 mappedItems.splice(index, 0, item);
-                this.valueAdded(value, index, item.mappedValue, item);
+                this.valueAdded(value, index, item.mappedValue, item, isMove);
                 offset++;
 
             } else if (status === "deleted") {
@@ -71,7 +71,7 @@
                 }
 
                 mappedItems.splice(from, 1);
-                this.valueDeleted(value, from, item.mappedValue, item);
+                this.valueDeleted(value, from, item.mappedValue, item, isMove);
                 offset--;
             }
         }
@@ -238,18 +238,37 @@
             this.sortedItems = [];
             return ko.observableArray([]);
         },
-        valueAdded: function (value, index, sortKey, item) {
+        valueAdded: function (value, index, sortKey, item, isMove) {
             var mappedIndex = this.sortedIndexOf(sortKey, value, item),
                 sortedItems = this.sortedItems;
+
+            if (isMove) {
+                // The item will exist twice in sortedItems, so we won't be
+                // able to use indexOf later.
+                var currentMappedIndex = indexOf(sortedItems, item);
+
+                if (currentMappedIndex >= 0) {
+                    if (mappedIndex <= currentMappedIndex) {
+                        currentMappedIndex++;
+                    }
+                    item.previousMappedIndex = currentMappedIndex;
+                }
+            }
 
             var keyCounts = this.keyCounts;
             sortedItems.splice(mappedIndex, 0, item);
             keyCounts[sortKey] = (keyCounts[sortKey] || 0) + 1;
             this.transformedArray.splice(mappedIndex, 0, value);
         },
-        valueDeleted: function (value, index, sortKey, item) {
-            var sortedItems = this.sortedItems,
+        valueDeleted: function (value, index, sortKey, item, isMove) {
+            var sortedItems = this.sortedItems, mappedIndex;
+
+            if (isMove && item.previousMappedIndex !== undefined) {
+                mappedIndex = item.previousMappedIndex;
+                delete item.previousMappedIndex;
+            } else {
                 mappedIndex = indexOf(sortedItems, item);
+            }
 
             sortedItems.splice(mappedIndex, 1);
             this.keyCounts[sortKey]--;

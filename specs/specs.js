@@ -204,6 +204,20 @@ describe("sortBy", function () {
             original[1]
         ]);
     });
+
+    it("can chain array moves", function () {
+        var original = [
+            { order: ko.observable(1) },
+            { order: ko.observable(2) },
+            { order: ko.observable(3) }
+        ];
+
+        var sorted = ko.observableArray(original.slice(0))
+            .sortBy("order").sortBy(function () { return 0 });
+
+        original[2].order(0);
+        expect(sorted()).toEqual([original[2], original[0], original[1]]);
+    });
 });
 
 
