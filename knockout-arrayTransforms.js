@@ -432,12 +432,18 @@
 
             applyChanges.call(this, changes);
 
+            var deletions = false;
             for (key in groups) {
                 notifyChanges(groups[key]);
 
                 if (!groups[key].transformedArray.length) {
                     this.deleteGroup(key);
+                    deletions = true;
                 }
+            }
+
+            if (deletions) {
+                notifyChanges(this);
             }
         },
         valueAdded: function (value, index, groupKey, item) {

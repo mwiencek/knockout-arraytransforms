@@ -779,6 +779,12 @@ describe("groupBy", function () {
             { key: "true", values: [{ num: 2 }, { num: 4 }] }
         ]);
 
+        b.subscribe(function (changes) {
+            expect(ko.toJS(changes)).toEqual([
+                { status: "deleted", index: 0, value: { key: "false", values: [] } }
+            ]);
+        }, null, "arrayChange");
+
         objects[2].num(6);
 
         expect(ko.toJS(b)).toEqual([
@@ -913,6 +919,31 @@ describe("groupBy", function () {
 
         expect(oddChanges).toEqual([
             { status: "deleted", value: objects[2], index: 0 }
+        ]);
+    });
+
+    it("notifies changes that occur on the transformation", function () {
+        var objects = [
+                { num: ko.observable(1) },
+                { num: ko.observable(3) }
+            ],
+            changes = null;
+
+        var a = ko.observableArray(objects.slice(0)),
+            b = a.groupBy(function (object) { return isEven(object.num()) });
+
+        b.subscribe(function (c) { changes = c }, null, "arrayChange");
+
+        a.push({ num: ko.observable(2) });
+
+        expect(ko.toJS(changes)).toEqual([
+            { status: "added", index: 1, value: { key: "true", values: [{ num: 2 }] } }
+        ]);
+
+        a.removeAll([objects[0], objects[1]]);
+
+        expect(ko.toJS(changes)).toEqual([
+            { status: "deleted", index: 0, value: { key: "false", values: [] } }
         ]);
     });
 
