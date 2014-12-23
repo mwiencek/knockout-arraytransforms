@@ -15,7 +15,7 @@
     "url": "http://github.com/mwiencek/knockout-arrayTransforms.git"
   },
   "dependencies": {
-    "knockout": "~3.1.0"
+    "knockout": "~3.2.0"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
