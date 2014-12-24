@@ -3,7 +3,7 @@
 
 (function (factory) {
     if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
-        factory(module.exports = require("knockout"));
+        module.exports = factory(require("knockout"));
     } else if (typeof define === "function" && define.amd) {
         define(["knockout"], factory);
     } else {
@@ -566,4 +566,6 @@
     ko.arrayTransforms = {
         makeTransform: makeTransform
     };
+
+    return ko.arrayTransforms;
 });
