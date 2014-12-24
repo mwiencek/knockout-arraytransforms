@@ -10,6 +10,7 @@
   "bugs": "https://github.com/mwiencek/knockout-arrayTransforms/issues",
   "license": "MIT (X11)",
   "author": "Michael Wiencek <mwiencek1@gmail.com>",
+  "main": "knockout-arrayTransforms.js",
   "repository": {
     "type": "git",
     "url": "http://github.com/mwiencek/knockout-arrayTransforms.git"
