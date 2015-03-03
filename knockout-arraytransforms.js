@@ -1,4 +1,4 @@
-// knockout-arrayTransforms 0.6.0 (https://github.com/mwiencek/knockout-arrayTransforms)
+// knockout-arraytransforms 0.6.0 (https://github.com/mwiencek/knockout-arraytransforms)
 // Released under the X11 License; see the LICENSE file in the official code repository.
 
 (function (factory) {
@@ -586,9 +586,12 @@
     ko.observableArray.fn.some = ko.observableArray.fn.any;
     ko.observableArray.fn.every = ko.observableArray.fn.all;
 
-    ko.arrayTransforms = {
+    ko.arraytransforms = {
         makeTransform: makeTransform
     };
 
-    return ko.arrayTransforms;
+    // Deprecated aliases
+    ko.arrayTransforms = ko.arraytransforms;
+
+    return ko.arraytransforms;
 });

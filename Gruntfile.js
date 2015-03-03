@@ -3,8 +3,8 @@ module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON("package.json"),
     jasmine: {
-      "knockout-arrayTransforms": {
-        src: "knockout-arrayTransforms.js",
+      "knockout-arraytransforms": {
+        src: "knockout-arraytransforms.js",
         options: {
           specs: "specs/specs.js",
           vendor: "specs/lib/knockout-3.1.0.debug.js"

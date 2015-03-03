@@ -1,14 +1,14 @@
 {
-    "name": "knockout-arrayTransforms",
+    "name": "knockout-arraytransforms",
     "description": "Efficient transformations of observable arrays (sortBy, map, filter/reject, groupBy, any/some, all/every).",
     "keywords": ["knockout", "observableArray"],
     "version": "0.6.0",
-    "main": "knockout-arrayTransforms.js",
+    "main": "knockout-arraytransforms.js",
     "license": "X11",
-    "homepage": "https://github.com/mwiencek/knockout-arrayTransforms",
+    "homepage": "https://github.com/mwiencek/knockout-arraytransforms",
     "repository": {
         "type": "git",
-        "url": "https://github.com/mwiencek/knockout-arrayTransforms.git"
+        "url": "https://github.com/mwiencek/knockout-arraytransforms.git"
     },
     "authors": [
         {

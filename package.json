@@ -6,14 +6,14 @@
     "knockout",
     "observableArray"
   ],
-  "homepage": "https://github.com/mwiencek/knockout-arrayTransforms",
-  "bugs": "https://github.com/mwiencek/knockout-arrayTransforms/issues",
+  "homepage": "https://github.com/mwiencek/knockout-arraytransforms",
+  "bugs": "https://github.com/mwiencek/knockout-arraytransforms/issues",
   "license": "X11",
   "author": "Michael Wiencek <mwiencek1@gmail.com>",
-  "main": "knockout-arrayTransforms.js",
+  "main": "knockout-arraytransforms.js",
   "repository": {
     "type": "git",
-    "url": "http://github.com/mwiencek/knockout-arrayTransforms.git"
+    "url": "http://github.com/mwiencek/knockout-arraytransforms.git"
   },
   "dependencies": {
     "knockout": "^3.3.0"
