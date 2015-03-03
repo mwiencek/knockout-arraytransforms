@@ -218,6 +218,32 @@ describe("sortBy", function () {
         original[2].order(0);
         expect(sorted()).toEqual([original[2], original[0], original[1]]);
     });
+
+    it("can sort [0, 1, 2, 3] => [2, 3, 1, 0] properly", function () {
+        var original = [
+            {id: 1, name: "David Longdon", linkPhrase: "flute, other percussion [cutlery] and percussion"},
+            {id: 2, name: "David Longdon", linkPhrase: "background vocals and lead vocals"},
+            {id: 3, name: "Andy Poole", linkPhrase: "background vocals"},
+            {id: 4, name: "Greg Spawton", linkPhrase: "background vocals"}
+        ];
+        var a = ko.observableArray(original.slice(0));
+        var b = a.sortBy('name');
+
+        // Sorted by linkPhrase
+        a([
+            original[2],
+            original[3],
+            original[1],
+            original[0]
+        ]);
+
+        expect(b()).toEqual([
+            {id: 3, name: "Andy Poole", linkPhrase: "background vocals"},
+            {id: 2, name: "David Longdon", linkPhrase: "background vocals and lead vocals"},
+            {id: 1, name: "David Longdon", linkPhrase: "flute, other percussion [cutlery] and percussion"},
+            {id: 4, name: "Greg Spawton", linkPhrase: "background vocals"}
+        ]);
+    });
 });
 
 

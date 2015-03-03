@@ -273,6 +273,14 @@
             sortedItems.splice(mappedIndex, 1);
             this.keyCounts[sortKey]--;
             this.transformedArray.splice(mappedIndex, 1);
+
+            for (var i = mappedIndex, len = sortedItems.length; i < len; i++) {
+                item = sortedItems[i];
+
+                if (item.previousMappedIndex !== undefined) {
+                    --item.previousMappedIndex;
+                }
+            }
         },
         valueMutated: function (value, newKey, oldKey, item) {
             var keyCounts = this.keyCounts,
