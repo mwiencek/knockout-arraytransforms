@@ -19,11 +19,11 @@
     "knockout": "^3.3.0"
   },
   "devDependencies": {
-    "grunt": "~0.4.1",
-    "grunt-contrib-jasmine": "~0.6.5",
+    "tape": "^3.5.0",
     "uglify-js": "^2.4.16"
   },
   "scripts": {
+    "test": "./node_modules/.bin/tape test/*.js",
     "build": "./node_modules/.bin/uglifyjs knockout-arraytransforms.js --mangle --compress unsafe,pure_getters --comments > dist/knockout-arraytransforms.min.js"
   }
 }
