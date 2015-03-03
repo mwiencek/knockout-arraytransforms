@@ -1,4 +1,4 @@
-// knockout-arrayTransforms 0.5.3 (https://github.com/mwiencek/knockout-arrayTransforms)
+// knockout-arrayTransforms 0.6.0 (https://github.com/mwiencek/knockout-arrayTransforms)
 // Released under the MIT (X11) License; see the LICENSE file in the official code repository.
 
 (function (factory) {
@@ -11,9 +11,10 @@
     }
 })(function (ko) {
 
-    var transformClasses = emptyObject(),
-        arrayChangeEvent = "arrayChange",
-        compareArrays = ko.utils.compareArrays;
+    var transformClasses = emptyObject();
+    var arrayChangeEvent = "arrayChange";
+    var compareArrays = ko.utils.compareArrays;
+    var uniqueID = 1;
 
     function applyChanges(changes) {
         var mappedItems = this.mappedItems,
@@ -253,9 +254,6 @@
                 var currentMappedIndex = indexOf(sortedItems, item);
 
                 if (currentMappedIndex >= 0) {
-                    if (mappedIndex <= currentMappedIndex) {
-                        currentMappedIndex++;
-                    }
                     item.previousMappedIndex = currentMappedIndex;
                 }
             }
@@ -264,6 +262,16 @@
             sortedItems.splice(mappedIndex, 0, item);
             keyCounts[sortKey] = (keyCounts[sortKey] || 0) + 1;
             this.transformedArray.splice(mappedIndex, 0, value);
+
+            var seen = uniqueID++;
+            for (var i = mappedIndex, len = sortedItems.length; i < len; i++) {
+                item = sortedItems[i];
+
+                if (item.seen !== seen && item.previousMappedIndex !== undefined && item.previousMappedIndex >= mappedIndex) {
+                    ++item.previousMappedIndex;
+                }
+                item.seen = seen;
+            }
         },
         valueDeleted: function (value, index, sortKey, item, isMove) {
             var sortedItems = this.sortedItems, mappedIndex;
@@ -279,12 +287,14 @@
             this.keyCounts[sortKey]--;
             this.transformedArray.splice(mappedIndex, 1);
 
+            var seen = uniqueID++;
             for (var i = mappedIndex, len = sortedItems.length; i < len; i++) {
                 item = sortedItems[i];
 
-                if (item.previousMappedIndex !== undefined) {
+                if (item.seen !== seen && item.previousMappedIndex !== undefined && item.previousMappedIndex > mappedIndex) {
                     --item.previousMappedIndex;
                 }
+                item.seen = seen;
             }
         },
         valueMutated: function (value, newKey, oldKey, item) {

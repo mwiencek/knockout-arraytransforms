@@ -219,29 +219,56 @@ describe("sortBy", function () {
         expect(sorted()).toEqual([original[2], original[0], original[1]]);
     });
 
-    it("can sort [0, 1, 2, 3] => [2, 3, 1, 0] properly", function () {
+    it("handles moves with duplicate keys properly", function () {
         var original = [
-            {id: 1, name: "David Longdon", linkPhrase: "flute, other percussion [cutlery] and percussion"},
-            {id: 2, name: "David Longdon", linkPhrase: "background vocals and lead vocals"},
-            {id: 3, name: "Andy Poole", linkPhrase: "background vocals"},
-            {id: 4, name: "Greg Spawton", linkPhrase: "background vocals"}
+            {id: 0, name: "Nick D’Virgilio", linkPhrase: "drums"},
+            {id: 1, name: "Dave Gregory", linkPhrase: "electric guitar and marimba"},
+            {id: 2, name: "Rachel Hall", linkPhrase: "electric violin and violin"},
+            {id: 3, name: "David Longdon", linkPhrase: "other percussion [glassware]"},
+            {id: 4, name: "David Longdon", linkPhrase: "flute, other percussion [cutlery] and percussion"},
+            {id: 5, name: "Danny Manners", linkPhrase: "organ, piano and synthesizer"},
+            {id: 6, name: "Andy Poole", linkPhrase: "acoustic guitar"},
+            {id: 7, name: "Greg Spawton", linkPhrase: "12 string guitar, acoustic guitar, electric bass guitar and electric guitar"},
+            {id: 8, name: "Worked Out", linkPhrase: "recording of"},
+            {id: 9, name: "Simon Godfrey", linkPhrase: "background vocals"},
+            {id: 10, name: "David Longdon", linkPhrase: "background vocals and lead vocals"},
+            {id: 11, name: "Andy Poole", linkPhrase: "background vocals"},
+            {id: 12, name: "Greg Spawton", linkPhrase: "background vocals"}
         ];
         var a = ko.observableArray(original.slice(0));
         var b = a.sortBy('name');
 
         // Sorted by linkPhrase
         a([
-            original[2],
-            original[3],
+            original[7],
+            original[6],
+            original[9],
+            original[11],
+            original[12],
+            original[10],
+            original[0],
             original[1],
-            original[0]
+            original[2],
+            original[4],
+            original[5],
+            original[3],
+            original[8]
         ]);
 
         expect(b()).toEqual([
-            {id: 3, name: "Andy Poole", linkPhrase: "background vocals"},
-            {id: 2, name: "David Longdon", linkPhrase: "background vocals and lead vocals"},
-            {id: 1, name: "David Longdon", linkPhrase: "flute, other percussion [cutlery] and percussion"},
-            {id: 4, name: "Greg Spawton", linkPhrase: "background vocals"}
+            {id: 6, name: "Andy Poole", linkPhrase: "acoustic guitar"},
+            {id: 11, name: "Andy Poole", linkPhrase: "background vocals"},
+            {id: 5, name: "Danny Manners", linkPhrase: "organ, piano and synthesizer"},
+            {id: 1, name: "Dave Gregory", linkPhrase: "electric guitar and marimba"},
+            {id: 10, name: "David Longdon", linkPhrase: "background vocals and lead vocals"},
+            {id: 4, name: "David Longdon", linkPhrase: "flute, other percussion [cutlery] and percussion"},
+            {id: 3, name: "David Longdon", linkPhrase: "other percussion [glassware]"},
+            {id: 7, name: "Greg Spawton", linkPhrase: "12 string guitar, acoustic guitar, electric bass guitar and electric guitar"},
+            {id: 12, name: "Greg Spawton", linkPhrase: "background vocals"},
+            {id: 0, name: "Nick D’Virgilio", linkPhrase: "drums"},
+            {id: 2, name: "Rachel Hall", linkPhrase: "electric violin and violin"},
+            {id: 9, name: "Simon Godfrey", linkPhrase: "background vocals"},
+            {id: 8, name: "Worked Out", linkPhrase: "recording of"}
         ]);
     });
 });
