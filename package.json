@@ -8,7 +8,7 @@
   ],
   "homepage": "https://github.com/mwiencek/knockout-arrayTransforms",
   "bugs": "https://github.com/mwiencek/knockout-arrayTransforms/issues",
-  "license": "MIT (X11)",
+  "license": "X11",
   "author": "Michael Wiencek <mwiencek1@gmail.com>",
   "main": "knockout-arrayTransforms.js",
   "repository": {

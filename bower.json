@@ -4,7 +4,7 @@
     "keywords": ["knockout", "observableArray"],
     "version": "0.6.0",
     "main": "knockout-arrayTransforms.js",
-    "license": "MIT (X11)",
+    "license": "X11",
     "homepage": "https://github.com/mwiencek/knockout-arrayTransforms",
     "repository": {
         "type": "git",

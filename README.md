@@ -79,4 +79,4 @@ Note: While I don’t plan on making tons of breaking changes to ```makeTransfor
 
 ## License
 
-MIT (X11). See LICENSE.
+X11. See LICENSE.
