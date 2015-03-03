@@ -95,7 +95,7 @@
             }
         });
 
-        for (var i = minIndex, len = mappedItems.length, item; i < len; i++) {
+        for (var i = minIndex, len = mappedItems.length; i < len; i++) {
             mappedItems[i].index(i);
         }
 
