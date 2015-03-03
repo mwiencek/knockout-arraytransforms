@@ -201,7 +201,12 @@
         if (ko.isObservable(transform) && transform.cacheDiffForKnownOperation) {
             // Disallow knockout to call trackChanges() on this array
             // Writing to it normally isn't support anyway
-            transform.subscribe = ko.observableArray.fn.subscribe;
+            if (ko.version >= '3.3.0') {
+                transform.beforeSubscriptionAdd = ko.observableArray.fn.beforeSubscriptionAdd;
+                transform.afterSubscriptionRemove = ko.observableArray.fn.afterSubscriptionRemove;
+            } else {
+                transform.subscribe = ko.observableArray.fn.subscribe;
+            }
             state.transformedArray = transform.peek();
             state.previousArray = state.transformedArray.concat();
         }
