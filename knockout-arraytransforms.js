@@ -1,6 +1,7 @@
-// knockout-arraytransforms 0.6.0 (https://github.com/mwiencek/knockout-arraytransforms)
-// Released under the X11 License; see the LICENSE file in the official code repository.
-
+/**
+ * @license knockout-arraytransforms 0.6.0 (https://github.com/mwiencek/knockout-arraytransforms)
+ * Released under the X11 License; see the LICENSE file in the official code repository.
+ */
 (function (factory) {
     if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
         module.exports = factory(require("knockout"));

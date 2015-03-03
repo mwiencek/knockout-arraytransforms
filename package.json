@@ -21,6 +21,9 @@
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-jasmine": "~0.6.5",
-    "grunt-contrib-uglify": "~0.4.0"
+    "uglify-js": "^2.4.16"
+  },
+  "scripts": {
+    "build": "./node_modules/.bin/uglifyjs knockout-arraytransforms.js --mangle --compress unsafe,pure_getters --comments > dist/knockout-arraytransforms.min.js"
   }
 }
