@@ -3,43 +3,40 @@
  * Released under the X11 License; see the LICENSE file in the official code repository.
  */
 (function (factory) {
-    if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
-        module.exports = factory(require("knockout"));
-    } else if (typeof define === "function" && define.amd) {
-        define(["knockout"], factory);
+    if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+        module.exports = factory(require('knockout'));
+    } else if (typeof define === 'function' && define.amd) {
+        define(['knockout'], factory);
     } else {
         factory(window.ko);
     }
 })(function (ko) {
+    'use strict';
 
     var transformClasses = emptyObject();
-    var arrayChangeEvent = "arrayChange";
-    var compareArrays = ko.utils.compareArrays;
     var uniqueID = 1;
 
     function applyChanges(changes) {
-        var mappedItems = this.mappedItems,
-            moves = emptyObject(),
-            minIndex = 0,
-            offset = 0;
+        var self = this;
+        var mappedItems = this.mappedItems;
+        var moves = emptyObject();
+        var minIndex = 0;
+        var offset = 0;
 
-        for (var i = 0, change; change = changes[i]; i++) {
-            var status = change.status;
-
-            if (status === "retained") {
-                continue;
+        changes.forEach(function (change) {
+            if (change.status === 'retained') {
+                return;
             }
 
-            var index = change.index,
-                moved = change.moved,
-                value = change.value,
-                isMove = moved !== undefined,
-                item = null;
+            var index = change.index;
+            var isMove = change.moved !== undefined;
+            var item = null;
+            var from;
 
             minIndex = Math.min(minIndex, index);
 
-            if (status === "added") {
-                var from = moved + offset;
+            if (change.status === 'added') {
+                from = change.moved + offset;
 
                 if (isMove) {
                     item = moves[index];
@@ -52,19 +49,18 @@
                     item = emptyObject();
                     item.index = ko.observable(index);
                     item.index.isDifferent = isDifferent;
-                    item.value = value;
-                    mapValue(this, item);
+                    item.value = change.value;
+                    mapValue(self, item);
                 }
 
                 mappedItems.splice(index, 0, item);
-                this.valueAdded(value, index, item.mappedValue, item, isMove);
+                self.valueAdded(change.value, index, item.mappedValue, item, isMove);
                 offset++;
-
-            } else if (status === "deleted") {
-                var from = index + offset;
+            } else if (change.status === 'deleted') {
+                from = index + offset;
 
                 if (isMove) {
-                    item = moves[moved] || (moves[moved] = mappedItems[from]);
+                    item = moves[change.moved] || (moves[change.moved] = mappedItems[from]);
                 } else {
                     item = mappedItems[from];
                     if (item.computed) {
@@ -73,33 +69,33 @@
                 }
 
                 mappedItems.splice(from, 1);
-                this.valueDeleted(value, from, item.mappedValue, item, isMove);
+                self.valueDeleted(change.value, from, item.mappedValue, item, isMove);
                 offset--;
             }
-        }
+        });
 
         for (var i = minIndex, len = mappedItems.length, item; i < len; i++) {
             mappedItems[i].index(i);
         }
 
         notifyChanges(this);
-    };
+    }
 
     function notifyChanges(state) {
         var array = state.transformedArray;
 
         if (array) {
-            var changes = compareArrays(state.previousArray, array, { sparse: true });
+            var changes = ko.utils.compareArrays(state.previousArray, array, {sparse: true});
             if (changes.length) {
                 state.previousArray = array.concat();
 
-                var original = state.original,
-                    notifySubscribers = original.notifySubscribers,
-                    previousOriginalArray = original.peek().concat(),
-                    pendingArrayChange = false;
+                var original = state.original;
+                var notifySubscribers = original.notifySubscribers;
+                var previousOriginalArray = original.peek().concat();
+                var pendingArrayChange = false;
 
                 original.notifySubscribers = function (valueToNotify, event) {
-                    if (event === "arrayChange") {
+                    if (event === 'arrayChange') {
                         pendingArrayChange = true;
                     } else {
                         notifySubscribers.apply(original, arguments);
@@ -107,13 +103,13 @@
                 };
 
                 state.transform.notifySubscribers(array);
-                state.transform.notifySubscribers(changes, arrayChangeEvent);
+                state.transform.notifySubscribers(changes, 'arrayChange');
 
                 original.notifySubscribers = notifySubscribers;
                 if (pendingArrayChange) {
-                    changes = compareArrays(previousOriginalArray, original.peek(), { sparse: true });
+                    changes = ko.utils.compareArrays(previousOriginalArray, original.peek(), {sparse: true});
                     if (changes.length) {
-                        original.notifySubscribers(changes, "arrayChange");
+                        original.notifySubscribers(changes, 'arrayChange');
                     }
                 }
             }
@@ -124,15 +120,12 @@
         return Object.create ? Object.create(null) : {};
     }
 
-    function exactlyEqual(a, b) { return a === b }
+    function isEqual(a, b) {
+        return a === b;
+    }
 
-    function isDifferent(a, b) { return a !== b }
-
-    function indexOf(array, item) {
-        for (var i = 0, len = array.length; i < len; i++) {
-            if (array[i] === item) return i;
-        }
-        return -1;
+    function isDifferent(a, b) {
+        return a !== b;
     }
 
     function mapValue(state, item) {
@@ -143,14 +136,14 @@
             return;
         }
 
-        var owner = state, method = "callback";
+        var owner = state, method = 'callback';
 
-        if (typeof callback !== "function") {
+        if (typeof callback !== 'function') {
             owner = item.value;
             method = callback;
             callback = owner[method];
 
-            if (typeof callback !== "function") {
+            if (typeof callback !== 'function') {
                 item.mappedValue = callback;
                 return;
 
@@ -165,7 +158,7 @@
         });
 
         if (computedValue.isActive()) {
-            computedValue.equalityComparer = exactlyEqual;
+            computedValue.equalityComparer = isEqual;
             watchItem(state, item, computedValue);
             item.computed = computedValue;
             return computedValue;
@@ -218,41 +211,42 @@
         function TransformState(original, callback, options) {
             initTransformState(this, original, callback, options);
         }
+
         TransformState.prototype.applyChanges = applyChanges;
         ko.utils.extend(TransformState.prototype, proto);
         transformClasses[proto.name] = TransformState;
 
         ko.observableArray.fn[proto.name] = function (callback, options) {
-            var state = new TransformState(this, callback, options),
-                originalArray = this.peek(),
-                initialChanges = [];
+            var state = new TransformState(this, callback, options);
+            var originalArray = this.peek();
 
-            this.subscribe(delegateApplyChanges, state, arrayChangeEvent);
+            this.subscribe(delegateApplyChanges, state, 'arrayChange');
 
-            for (var i = 0, len = originalArray.length; i < len; i++) {
-                initialChanges.push({ status: "added", value: originalArray[i], index: i });
-            }
+            state.applyChanges(
+                originalArray.map(function (value, index) {
+                    return {status: 'added', value: value, index: index};
+                })
+            );
 
-            state.applyChanges(initialChanges);
             return state.transform;
         };
     }
 
     makeTransform({
-        name: "sortBy",
+        name: 'sortBy',
         init: function () {
             this.keyCounts = emptyObject();
             this.sortedItems = [];
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, sortKey, item, isMove) {
-            var mappedIndex = this.sortedIndexOf(sortKey, value, item),
-                sortedItems = this.sortedItems;
+            var mappedIndex = this.sortedIndexOf(sortKey, value, item);
+            var sortedItems = this.sortedItems;
 
             if (isMove) {
                 // The item will exist twice in sortedItems, so we won't be
                 // able to use indexOf later.
-                var currentMappedIndex = indexOf(sortedItems, item);
+                var currentMappedIndex = sortedItems.indexOf(item);
 
                 if (currentMappedIndex >= 0) {
                     item.previousMappedIndex = currentMappedIndex;
@@ -281,7 +275,7 @@
                 mappedIndex = item.previousMappedIndex;
                 delete item.previousMappedIndex;
             } else {
-                mappedIndex = indexOf(sortedItems, item);
+                mappedIndex = sortedItems.indexOf(item);
             }
 
             sortedItems.splice(mappedIndex, 1);
@@ -299,9 +293,9 @@
             }
         },
         valueMutated: function (value, newKey, oldKey, item) {
-            var keyCounts = this.keyCounts,
-                oldIndex = indexOf(this.sortedItems, item),
-                newIndex = this.sortedIndexOf(newKey, value, item);
+            var keyCounts = this.keyCounts;
+            var oldIndex = this.sortedItems.indexOf(item);
+            var newIndex = this.sortedIndexOf(newKey, value, item);
 
             keyCounts[oldKey]--;
             keyCounts[newKey] = (keyCounts[newKey] || 0) + 1;
@@ -312,8 +306,8 @@
             }
 
             if (oldIndex !== newIndex) {
-                var array = this.transformedArray,
-                    sortedItems = this.sortedItems;
+                var array = this.transformedArray;
+                var sortedItems = this.sortedItems;
 
                 sortedItems.splice(oldIndex, 1);
                 sortedItems.splice(newIndex, 0, item);
@@ -323,14 +317,16 @@
             }
         },
         sortedIndexOf: function (key, value, item) {
-            var sortedItems = this.sortedItems,
-                length = sortedItems.length;
+            var sortedItems = this.sortedItems;
+            var length = sortedItems.length;
 
             if (!length) {
                 return 0;
             }
 
-            var start = 0, end = length - 1, index;
+            var start = 0;
+            var end = length - 1;
+            var index;
 
             while (start <= end) {
                 index = (start + end) >> 1;
@@ -370,31 +366,38 @@
     });
 
     function filterIndexOf(state, items, prop, index) {
-        var previousItem, mappedIndex = 0;
+        var previousItem;
+        var mappedIndex = 0;
+
         if (index > 0) {
             previousItem = items[index - 1];
             mappedIndex = previousItem[prop] || 0;
+
             if (state.getVisibility(previousItem.mappedValue)) {
                 mappedIndex++;
             }
         }
+
         return mappedIndex;
     }
 
     var filterOrReject = {
-        mappedIndexProp: "mappedIndex",
+        mappedIndexProp: 'mappedIndex',
         init: function () {
             return ko.observableArray([]);
         },
         valueAdded: function (value, index, visible, item) {
             visible = this.getVisibility(visible);
 
-            var mappedItems = this.mappedItems,
-                mappedIndexProp = this.mappedIndexProp;
+            var mappedItems = this.mappedItems;
+            var mappedIndexProp = this.mappedIndexProp;
 
             if (visible) {
                 for (var i = index + 1, len = mappedItems.length, tmp; i < len; i++) {
-                    (tmp = mappedItems[i]) && tmp[mappedIndexProp]++;
+                    tmp = mappedItems[i];
+                    if (tmp) {
+                        tmp[mappedIndexProp]++;
+                    }
                 }
             }
 
@@ -406,9 +409,9 @@
         },
         valueDeleted: function (value, index, visible, item) {
             if (this.getVisibility(visible)) {
-                var mappedItems = this.mappedItems,
-                    mappedIndexProp = this.mappedIndexProp,
-                    mappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, index);
+                var mappedItems = this.mappedItems;
+                var mappedIndexProp = this.mappedIndexProp;
+                var mappedIndex = filterIndexOf(this, mappedItems, mappedIndexProp, index);
 
                 // In normal cases, this item will already be spliced out of
                 // mappedItems, because it was removed from the original array.
@@ -424,39 +427,46 @@
                 }
 
                 for (var i = index, len = mappedItems.length, tmp; i < len; i++) {
-                    (tmp = mappedItems[i]) && tmp[mappedIndexProp]--;
+                    tmp = mappedItems[i];
+                    if (tmp) {
+                        tmp[mappedIndexProp]--;
+                    }
                 }
 
                 this.transformedArray.splice(mappedIndex, 1);
             }
         },
         valueMutated: function (value, shouldBeVisible, currentlyVisible, item) {
-            var index = indexOf(this.mappedItems, item);
+            var index = this.mappedItems.indexOf(item);
             this.valueAdded(value, index, shouldBeVisible, item);
             this.valueDeleted(value, index, currentlyVisible, item);
         }
     };
 
-    function boolNot(x) { return !x }
-    makeTransform(ko.utils.extend({ name: "filter", getVisibility: Boolean }, filterOrReject));
-    makeTransform(ko.utils.extend({ name: "reject", getVisibility: boolNot }, filterOrReject));
+    function isNot(x) {
+        return !x;
+    }
+
+    makeTransform(ko.utils.extend({name: 'filter', getVisibility: Boolean}, filterOrReject));
+    makeTransform(ko.utils.extend({name: 'reject', getVisibility: isNot}, filterOrReject));
 
     function getGroupVisibility(groupKey) {
         return String(groupKey) === this.groupKey;
     }
 
     makeTransform({
-        name: "groupBy",
+        name: 'groupBy',
         init: function () {
             this.groups = emptyObject();
             return ko.observableArray([]);
         },
         applyChanges: function (changes) {
             var groups = this.groups;
+            var deletions = false;
+            var key;
 
             applyChanges.call(this, changes);
 
-            var deletions = false;
             for (key in groups) {
                 notifyChanges(groups[key]);
 
@@ -474,6 +484,7 @@
             groupKey = String(groupKey);
 
             var groups = this.groups;
+            var key;
 
             if (!groups[groupKey]) {
                 var group = new transformClasses.filter(this.original);
@@ -481,7 +492,7 @@
 
                 group.groupKey = groupKey;
                 group.mappedItems = this.mappedItems;
-                group.mappedIndexProp = "mappedIndex." + groupKey;
+                group.mappedIndexProp = 'mappedIndex.' + groupKey;
                 group.getVisibility = getGroupVisibility;
 
                 var object = emptyObject();
@@ -491,26 +502,28 @@
                 this.transformedArray.push(object);
             }
 
-            for (var key in groups) {
+            for (key in groups) {
                 groups[key].valueAdded(value, index, groupKey, item);
             }
         },
         valueDeleted: function (value, index, groupKey, item) {
             var groups = this.groups;
+            var key;
 
-            for (var key in groups) {
+            for (key in groups) {
                 groups[key].valueDeleted(value, index, groupKey, item);
             }
         },
         valueMutated: function (value, newGroupKey, oldGroupKey, item) {
-            var groups = this.groups,
-                index = indexOf(this.mappedItems, item),
-                group;
+            var groups = this.groups;
+            var index = this.mappedItems.indexOf(item);
+            var group;
+            var key;
 
             this.valueDeleted(value, index, oldGroupKey, item);
             this.valueAdded(value, index, newGroupKey, item);
 
-            for (var key in groups) {
+            for (key in groups) {
                 group = groups[key];
 
                 notifyChanges(group);
@@ -534,7 +547,7 @@
     });
 
     makeTransform({
-        name: "map",
+        name: 'map',
         init: function () {
             return ko.observableArray([]);
         },
@@ -545,7 +558,7 @@
             this.transformedArray.splice(index, 1);
         },
         valueMutated: function (value, newMappedValue, oldMappedValue, item) {
-            this.transformedArray[indexOf(this.mappedItems, item)] = newMappedValue;
+            this.transformedArray[this.mappedItems.indexOf(item)] = newMappedValue;
         }
     });
 
@@ -571,14 +584,14 @@
     };
 
     makeTransform(ko.utils.extend({
-        name: "any",
+        name: 'any',
         getTruthiness: function () {
             return this.truthinessCount > 0;
         }
     }, allOrAny));
 
     makeTransform(ko.utils.extend({
-        name: "all",
+        name: 'all',
         getTruthiness: function () {
             return this.truthinessCount === this.mappedItems.length;
         }
