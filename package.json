@@ -22,6 +22,19 @@
     "tape": "^3.5.0",
     "uglify-js": "^2.4.16"
   },
+  "testling": {
+    "files": "test/*.js",
+    "browsers": [
+      "ie/8..latest",
+      "chrome/24..latest",
+      "firefox/17..latest",
+      "safari/5..latest",
+      "opera/11.0..latest",
+      "iphone/6",
+      "ipad/6",
+      "android-browser/latest"
+    ]
+  },
   "scripts": {
     "test": "./node_modules/.bin/tape test/*.js",
     "build": "./node_modules/.bin/uglifyjs knockout-arraytransforms.js --mangle --compress unsafe,pure_getters --comments > dist/knockout-arraytransforms.min.js"
