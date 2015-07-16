@@ -1,5 +1,5 @@
 /**
- * @license knockout-arraytransforms 1.0.0 (https://github.com/mwiencek/knockout-arraytransforms)
+ * @license knockout-arraytransforms 2.0.0 (https://github.com/mwiencek/knockout-arraytransforms)
  * Released under the X11 License; see the LICENSE file in the official code repository.
  */
 

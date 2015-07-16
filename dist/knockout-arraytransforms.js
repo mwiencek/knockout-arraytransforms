@@ -465,7 +465,7 @@ module.exports = require('./createTransform')('groupBy', {
 
 },{"./TransformBase":1,"./createTransform":5,"./filter":6,"knockout":"knockout"}],9:[function(require,module,exports){
 /**
- * @license knockout-arraytransforms 1.0.0 (https://github.com/mwiencek/knockout-arraytransforms)
+ * @license knockout-arraytransforms 2.0.0 (https://github.com/mwiencek/knockout-arraytransforms)
  * Released under the X11 License; see the LICENSE file in the official code repository.
  */
 
