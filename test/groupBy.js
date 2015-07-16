@@ -2,7 +2,7 @@ var test = require('tape');
 var ko = require('knockout');
 var common = require('./common.js');
 
-require('../knockout-arraytransforms.js');
+require('../');
 
 test('groups an array’s initial contents', function (t) {
     t.plan(2);

@@ -1,7 +1,7 @@
 var test = require('tape');
 var ko = require('knockout');
 
-require('../knockout-arraytransforms.js');
+require('../');
 
 test('maps changes that trigger nested notifications', function (t) {
     t.plan(3);

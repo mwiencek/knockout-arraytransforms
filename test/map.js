@@ -2,7 +2,7 @@ var test = require('tape');
 var ko = require('knockout');
 var common = require('./common.js');
 
-require('../knockout-arraytransforms.js');
+require('../');
 
 var squaredInts = [1, 4, 9, 16, 25, 36, 49, 64, 81];
 

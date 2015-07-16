@@ -2,7 +2,7 @@ var test = require('tape');
 var ko = require('knockout');
 var common = require('./common.js');
 
-require('../knockout-arraytransforms.js');
+require('../');
 
 function charCode(x) {
     return x.charCodeAt(0);
