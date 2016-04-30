@@ -224,15 +224,29 @@ test('notifies changes that occur on the group arrays', function (t) {
 
     a.reverse();
 
-    t.deepEqual(ko.toJS(evenChanges), [
-        {status: 'deleted', value: {num: 2}, index: 0, moved: 1},
-        {status: 'added', value: {num: 2}, index: 1, moved: 0}
-    ]);
+    // 3.4.0 produces a different diff, but applying it should produce the
+    // same result, so it doesn't cause any known problems.
+    if (ko.version >= '3.4.0') {
+        t.deepEqual(ko.toJS(evenChanges), [
+            {status: 'added', value: {num: 4}, index: 0, moved: 1},
+            {status: 'deleted', value: {num: 4}, index: 1, moved: 0}
+        ]);
 
-    t.deepEqual(ko.toJS(oddChanges), [
-        {status: 'deleted', value: {num: 1}, index: 0, moved: 1},
-        {status: 'added', value: {num: 1}, index: 1, moved: 0}
-    ]);
+        t.deepEqual(ko.toJS(oddChanges), [
+            {status: 'added', value: {num: 3}, index: 0, moved: 1},
+            {status: 'deleted', value: {num: 3}, index: 1, moved: 0}
+        ]);
+    } else {
+        t.deepEqual(ko.toJS(evenChanges), [
+            {status: 'deleted', value: {num: 2}, index: 0, moved: 1},
+            {status: 'added', value: {num: 2}, index: 1, moved: 0}
+        ]);
+
+        t.deepEqual(ko.toJS(oddChanges), [
+            {status: 'deleted', value: {num: 1}, index: 0, moved: 1},
+            {status: 'added', value: {num: 1}, index: 1, moved: 0}
+        ]);
+    }
 
     objects[0].num(0);
 

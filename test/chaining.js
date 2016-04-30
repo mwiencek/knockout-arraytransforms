@@ -36,12 +36,24 @@ test('filter -> filter', function (t) {
 
     a.reverse();
     t.deepEqual(b(), [75, 73, 71]);
-    t.deepEqual(changes, [
-        {status: 'deleted', index: 0, moved: 2, value: 71},
-        {status: 'added', index: 0, moved: 2, value: 75},
-        {status: 'deleted', index: 2, moved: 0, value: 75},
-        {status: 'added', index: 2, moved: 0, value: 71}
-    ]);
+
+    // 3.4.0 produces a different diff, but applying it should produce the
+    // same result, so it doesn't cause any known problems.
+    if (ko.version >= '3.4.0') {
+        t.deepEqual(changes, [
+            {status: 'added', index: 0, moved: 2, value: 75},
+            {status: 'deleted', index: 0, moved: 2, value: 71},
+            {status: 'added', index: 2, moved: 0, value: 71},
+            {status: 'deleted', index: 2, moved: 0, value: 75}
+        ]);
+    } else {
+        t.deepEqual(changes, [
+            {status: 'deleted', index: 0, moved: 2, value: 71},
+            {status: 'added', index: 0, moved: 2, value: 75},
+            {status: 'deleted', index: 2, moved: 0, value: 75},
+            {status: 'added', index: 2, moved: 0, value: 71}
+        ]);
+    }
 
     a.push(73);
     t.deepEqual(b(), [75, 73, 71, 73]);
