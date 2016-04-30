@@ -20,7 +20,7 @@
   "devDependencies": {
     "browserify": "^10.2.6",
     "proxyquire": "^1.7.4",
-    "tape": "^3.5.0"
+    "tape": "^4.5.1"
   },
   "scripts": {
     "test": "./node_modules/.bin/tape test/*.js",
