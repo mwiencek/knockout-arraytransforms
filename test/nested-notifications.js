@@ -1,7 +1,8 @@
+var proxyquire = require('proxyquire');
 var test = require('tape');
-var ko = require('knockout');
+var ko = require('./lib/knockout');
 
-require('../');
+proxyquire('../', {knockout: ko});
 
 test('maps changes that trigger nested notifications', function (t) {
     t.plan(3);
