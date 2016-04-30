@@ -1,4 +1,4 @@
-# knockout-arraytransforms
+# knockout-arraytransforms [![Build Status](https://travis-ci.org/mwiencek/knockout-arraytransforms.svg?branch=master)](https://travis-ci.org/mwiencek/knockout-arraytransforms)
 
 Allows for creating efficient transformations of observable arrays.
 
