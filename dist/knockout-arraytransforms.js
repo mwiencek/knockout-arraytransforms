@@ -1,6 +1,41 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var ko = require('knockout');
 
+// Hack for detecting minified method names.
+var methodNames = {};
+(function () {
+    var observable = ko.observable();
+    var prevOwnMethods = {};
+    var key;
+    for (key in observable) {
+        if (observable.hasOwnProperty(key) &&
+                typeof observable[key] === 'function') {
+            prevOwnMethods[key] = true;
+        }
+    }
+    ko.extenders.trackArrayChanges(observable);
+    var newOwnMethods = [];
+    for (key in observable) {
+        if (observable.hasOwnProperty(key) &&
+                // added in < 3.3.0
+                key !== 'subscribe' &&
+                typeof observable[key] === 'function' &&
+                !prevOwnMethods.hasOwnProperty(key)) {
+            newOwnMethods.push([key, observable[key].toString().length]);
+        }
+    }
+    if (ko.version < '3.3.0') {
+        methodNames['cacheDiffForKnownOperation'] = newOwnMethods[0];
+    } else {
+        newOwnMethods.sort(function (a, b) {
+            return a[1] - b[1];
+        });
+        methodNames['beforeSubscriptionAdd'] = newOwnMethods[0];
+        methodNames['afterSubscriptionRemove'] = newOwnMethods[1];
+        methodNames['cacheDiffForKnownOperation'] = newOwnMethods[2];
+    }
+}());
+
 function TransformBase() {}
 
 TransformBase.prototype.init = function (original, callback, options) {
@@ -10,12 +45,17 @@ TransformBase.prototype.init = function (original, callback, options) {
     this.state = this.getInitialState(options);
 
     var state = this.state;
-    if (ko.isObservable(state) && state.cacheDiffForKnownOperation) {
+    var cacheDiffForKnownOperation = methodNames['cacheDiffForKnownOperation'][0];
+    if (ko.isObservable(state) &&
+            typeof state[cacheDiffForKnownOperation] === 'function' &&
+            state[cacheDiffForKnownOperation].toString().length === methodNames['cacheDiffForKnownOperation'][1]) {
         // Disallow knockout to call trackChanges() on this array
         // Writing to it normally isn't support anyway
         if (ko.version >= '3.3.0') {
-            state.beforeSubscriptionAdd = ko.observableArray.fn.beforeSubscriptionAdd;
-            state.afterSubscriptionRemove = ko.observableArray.fn.afterSubscriptionRemove;
+            var beforeSubscriptionAdd = methodNames['beforeSubscriptionAdd'][0];
+            var afterSubscriptionRemove = methodNames['afterSubscriptionRemove'][0];
+            state[beforeSubscriptionAdd] = ko.observableArray.fn[beforeSubscriptionAdd];
+            state[afterSubscriptionRemove] = ko.observableArray.fn[afterSubscriptionRemove];
         } else {
             state.subscribe = ko.observableArray.fn.subscribe;
         }
@@ -465,7 +505,7 @@ module.exports = require('./createTransform')('groupBy', {
 
 },{"./TransformBase":1,"./createTransform":5,"./filter":6,"knockout":"knockout"}],9:[function(require,module,exports){
 /**
- * @license knockout-arraytransforms 2.0.0 (https://github.com/mwiencek/knockout-arraytransforms)
+ * @license knockout-arraytransforms 2.1.0 (https://github.com/mwiencek/knockout-arraytransforms)
  * Released under the X11 License; see the LICENSE file in the official code repository.
  */
 
