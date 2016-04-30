@@ -19,8 +19,7 @@
         "knockout": "^3.1.0"
     },
     "ignore": [
-        "specs",
-        "Gruntfile.js",
+        "test",
         "package.json",
         ".gitignore"
     ]
