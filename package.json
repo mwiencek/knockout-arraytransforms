@@ -1,6 +1,6 @@
 {
   "name": "knockout-arraytransforms",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Efficient transformations of observable arrays (sortBy, map, filter/reject, groupBy, any/some, all/every).",
   "keywords": [
     "knockout",
@@ -15,24 +15,12 @@
     "url": "http://github.com/mwiencek/knockout-arraytransforms.git"
   },
   "dependencies": {
-    "knockout": "^3.1.0"
+    "knockout": ">= 3.1.0"
   },
   "devDependencies": {
-    "browserify": "^10.2.6",
-    "tape": "^3.5.0"
-  },
-  "testling": {
-    "files": "test/*.js",
-    "browsers": [
-      "ie/8..latest",
-      "chrome/24..latest",
-      "firefox/17..latest",
-      "safari/5..latest",
-      "opera/11.0..latest",
-      "iphone/6",
-      "ipad/6",
-      "android-browser/latest"
-    ]
+    "browserify": "^13.0.0",
+    "proxyquire": "^1.7.4",
+    "tape": "^4.5.1"
   },
   "scripts": {
     "test": "./node_modules/.bin/tape test/*.js",

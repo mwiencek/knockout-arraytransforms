@@ -1,7 +1,5 @@
 # knockout-arraytransforms
 
-[![browser support](https://ci.testling.com/mwiencek/knockout-arraytransforms.png)](https://ci.testling.com/mwiencek/knockout-arraytransforms)
-
 Allows for creating efficient transformations of observable arrays.
 
 ```JavaScript

@@ -1,0 +1,13 @@
+sudo: false
+language: node_js
+node_js:
+  - "0.10"
+env:
+  - KNOCKOUT_VERSION=3.1.0
+  - KNOCKOUT_VERSION=3.1.0.debug
+  - KNOCKOUT_VERSION=3.2.0
+  - KNOCKOUT_VERSION=3.2.0.debug
+  - KNOCKOUT_VERSION=3.3.0
+  - KNOCKOUT_VERSION=3.3.0.debug
+  - KNOCKOUT_VERSION=3.4.0
+  - KNOCKOUT_VERSION=3.4.0.debug

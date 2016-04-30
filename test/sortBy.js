@@ -1,8 +1,9 @@
+var proxyquire = require('proxyquire');
 var test = require('tape');
-var ko = require('knockout');
+var ko = require('./lib/knockout');
 var common = require('./common.js');
 
-require('../');
+proxyquire('../', {knockout: ko});
 
 test('sorts an array’s initial contents', function (t) {
     t.plan(1);

@@ -1,8 +1,10 @@
+var proxyquire = require('proxyquire');
 var test = require('tape');
-var ko = require('knockout');
+var ko = require('./lib/knockout');
 var common = require('./common.js');
 
-require('../');
+ko['@global'] = true;
+proxyquire('../', {knockout: ko});
 
 test('tests an array’s initial contents', function (t) {
     t.plan(1);

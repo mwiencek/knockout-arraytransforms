@@ -1,8 +1,9 @@
+var proxyquire = require('proxyquire');
 var test = require('tape');
-var ko = require('knockout');
+var ko = require('./lib/knockout');
 var common = require('./common.js');
 
-require('../');
+proxyquire('../', {knockout: ko});
 
 var squaredInts = [1, 4, 9, 16, 25, 36, 49, 64, 81];
 
