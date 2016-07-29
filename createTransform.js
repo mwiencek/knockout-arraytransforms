@@ -1,6 +1,12 @@
 var ko = require('knockout');
 var TransformBase = require('./TransformBase');
 
+function applyChanges(changes) {
+    if (this.original._shouldPropagateChanges !== false) {
+        this.applyChanges(changes);
+    }
+}
+
 module.exports = function createTransform(name, proto) {
     function Transform() {}
 
@@ -12,7 +18,7 @@ module.exports = function createTransform(name, proto) {
         transform.init(this, callback, options);
 
         var initialState = this.peek();
-        this.subscribe(transform.applyChanges, transform, 'arrayChange');
+        this.subscribe(applyChanges, transform, 'arrayChange');
 
         transform.applyChanges(
             initialState.map(function (value, index) {

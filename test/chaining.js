@@ -371,3 +371,18 @@ test('sortBy -> groupBy', function (t) {
         {key: '1', values: [{a: 1, b: 3}, {a: 1, b: 4}]}
     ]);
 });
+
+test('groupBy -> map (#1)', function (t) {
+    t.plan(1);
+
+    var a = ko.observableArray([]);
+    var b = a.groupBy(function (x) { return x.color }).map(function (group) {
+        return {
+            groupColor: group.key,
+            names: group.values.map(function (x) { return x.name }),
+        };
+    });
+
+    a.push({name: 'pr1', color: 'red'});
+    t.deepEqual(b()[0].names(), ['pr1']);
+});

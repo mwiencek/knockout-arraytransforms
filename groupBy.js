@@ -23,13 +23,19 @@ module.exports = require('./createTransform')('groupBy', {
         var groups = this.groups;
         var deletions = false;
         var key;
+        var group;
 
         TransformBase.prototype.applyChanges.call(this, changes);
 
         for (key in groups) {
-            groups[key].notifyChanges();
+            group = groups[key];
+            // Changes were already propagated to chained transforms above.
+            // Fixes #1.
+            group.state._shouldPropagateChanges = false;
+            group.notifyChanges();
+            group.state._shouldPropagateChanges = true;
 
-            if (!groups[key].state.peek().length) {
+            if (!group.state.peek().length) {
                 this.deleteGroup(key);
                 deletions = true;
             }
