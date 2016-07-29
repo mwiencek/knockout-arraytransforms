@@ -1,0 +1,29 @@
+<html>
+    <body>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script>
+        <script>
+            requirejs.config({
+                config: {
+                    'knockout-arraytransforms': {
+                        methodNames: {
+                            all: 'trAll',
+                            any: 'trAny',
+                            filter: 'trFilter',
+                            groupBy: 'trGroupBy',
+                            map: 'trMap',
+                            reject: 'trReject',
+                            sortBy: 'trSortBy',
+                        },
+                    },
+                },
+                paths: {
+                    knockout: 'lib/knockout-3.4.0',
+                    'knockout-arraytransforms': '../dist/knockout-arraytransforms',
+                },
+            });
+            requirejs(['knockout', 'knockout-arraytransforms'], function (ko) {
+                window.callback(ko);
+            });
+        </script>
+    </body>
+</html>

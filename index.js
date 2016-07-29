@@ -14,3 +14,7 @@ require('./sortBy');
 module.exports = {
     createTransform: require('./createTransform')
 };
+
+if (typeof window !== 'undefined') {
+	window.knockoutArraytransforms = module.exports;
+}

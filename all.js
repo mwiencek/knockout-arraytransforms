@@ -8,5 +8,3 @@ module.exports = require('./createTransform')(
         }
     }, require('./allOrAny'))
 );
-
-ko.observableArray.fn.every = ko.observableArray.fn.all;

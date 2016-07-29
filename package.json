@@ -1,7 +1,7 @@
 {
   "name": "knockout-arraytransforms",
   "version": "2.1.1",
-  "description": "Efficient transformations of observable arrays (sortBy, map, filter/reject, groupBy, any/some, all/every).",
+  "description": "Efficient transformations of observable arrays (sortBy, map, filter/reject, groupBy, any, all).",
   "keywords": [
     "knockout",
     "observableArray"
@@ -19,11 +19,12 @@
   },
   "devDependencies": {
     "browserify": "^13.0.0",
+    "jsdom": "^9.4.1",
     "proxyquire": "^1.7.4",
     "tape": "^4.5.1"
   },
   "scripts": {
     "test": "./node_modules/.bin/tape test/*.js",
-    "build": "./node_modules/.bin/browserify index.js -x knockout -o dist/knockout-arraytransforms.js"
+    "build": "./build.sh"
   }
 }

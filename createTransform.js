@@ -1,6 +1,14 @@
 var ko = require('knockout');
 var TransformBase = require('./TransformBase');
 
+var methodNames = {};
+if (typeof requireJsModule === 'object' && requireJsModule) {
+    var requireJsConfig = requireJsModule.config();
+    if (requireJsConfig && requireJsConfig.methodNames) {
+        methodNames = requireJsConfig.methodNames;
+    }
+}
+
 function applyChanges(changes) {
     if (this.original._shouldPropagateChanges !== false) {
         this.applyChanges(changes);
@@ -12,6 +20,10 @@ module.exports = function createTransform(name, proto) {
 
     Transform.prototype = new TransformBase();
     ko.utils.extend(Transform.prototype, proto);
+
+    if (methodNames.hasOwnProperty(name)) {
+        name = methodNames[name];
+    }
 
     ko.observableArray.fn[name] = function (callback, options) {
         var transform = new Transform();

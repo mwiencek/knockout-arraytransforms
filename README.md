@@ -37,7 +37,7 @@ integers()[11](14);
 
 ## Transformations
 
-all/every, any/some, filter/reject, groupBy, map, sortBy.
+all, any, filter, reject, groupBy, map, sortBy.
 
 Callback functions receive two arguments: an item in the original array, and an observable containing the index of that item in the original array.
 
