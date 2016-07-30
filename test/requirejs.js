@@ -3,7 +3,7 @@ var jsdom = require('jsdom');
 var path = require('path');
 
 test('defining custom method names via requirejs config', function(t) {
-    t.plan(16);
+    t.plan(14);
 
     var virtualConsole = jsdom.createVirtualConsole().sendTo(console);
 
