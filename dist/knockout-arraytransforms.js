@@ -1,3 +1,21 @@
+(function (factory) {
+    if (typeof define === 'function' && define.amd) {
+        define(['knockout', 'module'], function (ko, module) {
+            factory(function (name) {
+                if (name === 'knockout') {
+                    return ko;
+                }
+            }, module);
+            return window.knockoutArraytransforms;
+        });
+    } else {
+        factory(require || function (name) {
+            if (name === 'knockout') {
+                return window.ko;
+            }
+        });
+    }
+}(function (require, requireJsModule) {
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var ko = require('knockout');
 
@@ -243,8 +261,6 @@ module.exports = require('./createTransform')(
     }, require('./allOrAny'))
 );
 
-ko.observableArray.fn.every = ko.observableArray.fn.all;
-
 },{"./allOrAny":3,"./createTransform":5,"knockout":"knockout"}],3:[function(require,module,exports){
 var ko = require('knockout');
 
@@ -281,11 +297,23 @@ module.exports = require('./createTransform')(
     }, require('./allOrAny'))
 );
 
-ko.observableArray.fn.some = ko.observableArray.fn.any;
-
 },{"./allOrAny":3,"./createTransform":5,"knockout":"knockout"}],5:[function(require,module,exports){
 var ko = require('knockout');
 var TransformBase = require('./TransformBase');
+
+var methodNames = {};
+if (typeof requireJsModule === 'object' && requireJsModule) {
+    var requireJsConfig = requireJsModule.config();
+    if (requireJsConfig && requireJsConfig.methodNames) {
+        methodNames = requireJsConfig.methodNames;
+    }
+}
+
+function applyChanges(changes) {
+    if (this.original._shouldPropagateChanges !== false) {
+        this.applyChanges(changes);
+    }
+}
 
 module.exports = function createTransform(name, proto) {
     function Transform() {}
@@ -293,12 +321,16 @@ module.exports = function createTransform(name, proto) {
     Transform.prototype = new TransformBase();
     ko.utils.extend(Transform.prototype, proto);
 
+    if (methodNames.hasOwnProperty(name)) {
+        name = methodNames[name];
+    }
+
     ko.observableArray.fn[name] = function (callback, options) {
         var transform = new Transform();
         transform.init(this, callback, options);
 
         var initialState = this.peek();
-        this.subscribe(transform.applyChanges, transform, 'arrayChange');
+        this.subscribe(applyChanges, transform, 'arrayChange');
 
         transform.applyChanges(
             initialState.map(function (value, index) {
@@ -426,13 +458,19 @@ module.exports = require('./createTransform')('groupBy', {
         var groups = this.groups;
         var deletions = false;
         var key;
+        var group;
 
         TransformBase.prototype.applyChanges.call(this, changes);
 
         for (key in groups) {
-            groups[key].notifyChanges();
+            group = groups[key];
+            // Changes were already propagated to chained transforms above.
+            // Fixes #1.
+            group.state._shouldPropagateChanges = false;
+            group.notifyChanges();
+            group.state._shouldPropagateChanges = true;
 
-            if (!groups[key].state.peek().length) {
+            if (!group.state.peek().length) {
                 this.deleteGroup(key);
                 deletions = true;
             }
@@ -520,6 +558,10 @@ require('./sortBy');
 module.exports = {
     createTransform: require('./createTransform')
 };
+
+if (typeof window !== 'undefined') {
+	window.knockoutArraytransforms = module.exports;
+}
 
 },{"./all":2,"./any":4,"./createTransform":5,"./filter":6,"./groupBy":8,"./map":10,"./reject":11,"./sortBy":12}],10:[function(require,module,exports){
 var ko = require('knockout');
@@ -689,3 +731,4 @@ module.exports = require('./createTransform')('sortBy', {
 });
 
 },{"./createTransform":5,"knockout":"knockout"}]},{},[9]);
+}));
