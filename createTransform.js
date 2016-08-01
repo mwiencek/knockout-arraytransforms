@@ -10,7 +10,8 @@ if (typeof requireJsModule === 'object' && requireJsModule) {
 }
 
 function applyChanges(changes) {
-    if (this.original._shouldPropagateChanges !== false) {
+    if (!(TransformBase.prototype.__checkTick &&
+            this.original.__kat_tick === TransformBase.prototype.__tick)) {
         this.applyChanges(changes);
     }
 }

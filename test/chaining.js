@@ -373,7 +373,7 @@ test('sortBy -> groupBy', function (t) {
 });
 
 test('groupBy -> map (#1)', function (t) {
-    t.plan(1);
+    t.plan(6);
 
     var a = ko.observableArray([]);
     var b = a.groupBy(function (x) { return x.color }).map(function (group) {
@@ -383,6 +383,24 @@ test('groupBy -> map (#1)', function (t) {
         };
     });
 
-    a.push({name: 'pr1', color: 'red'});
+    var pr1 = {name: 'pr1', color: 'red'};
+    var pr2 = {name: 'pr2', color: 'red'};
+
+    a.push(pr1);
+    t.deepEqual(b()[0].names(), ['pr1']);
+
+    a.push(pr2);
+    t.deepEqual(b()[0].names(), ['pr1', 'pr2']);
+
+    a.remove(pr1);
+    t.deepEqual(b()[0].names(), ['pr2']);
+
+    a([pr1, pr2]);
+    t.deepEqual(b()[0].names(), ['pr1', 'pr2']);
+
+    a([pr2, pr1, pr2]);
+    t.deepEqual(b()[0].names(), ['pr2', 'pr1', 'pr2']);
+
+    a.remove(pr2);
     t.deepEqual(b()[0].names(), ['pr1']);
 });

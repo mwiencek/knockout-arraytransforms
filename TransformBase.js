@@ -37,7 +37,14 @@ var methodNames = {};
 
 function TransformBase() {}
 
+TransformBase.prototype.__tick = 0;
+TransformBase.prototype.__checkTick = false;
+
 TransformBase.prototype.init = function (original, callback, options) {
+    if (!original.hasOwnProperty('__kat_tick')) {
+        original.__kat_tick = 0;
+    }
+
     this.mappedItems = [];
     this.original = original;
     this.callback = callback;
@@ -63,6 +70,8 @@ TransformBase.prototype.init = function (original, callback, options) {
 };
 
 TransformBase.prototype.applyChanges = function (changes) {
+    this.original.__kat_tick = TransformBase.prototype.__tick;
+
     var self = this;
     var mappedItems = this.mappedItems;
     var moves = Object.create(null);
