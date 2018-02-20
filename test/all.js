@@ -3,7 +3,6 @@ var test = require('tape');
 var ko = require('./lib/knockout');
 var common = require('./common.js');
 
-ko['@global'] = true;
 proxyquire('../', {knockout: ko});
 
 test('tests an array’s initial contents', function (t) {
