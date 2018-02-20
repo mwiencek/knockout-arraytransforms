@@ -16,7 +16,7 @@
         });
     }
 }(function (require, requireJsModule) {
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
 var ko = require('knockout');
 
 // Hack for detecting minified method names.
@@ -56,7 +56,14 @@ var methodNames = {};
 
 function TransformBase() {}
 
+TransformBase.prototype.__tick = 0;
+TransformBase.prototype.__checkTick = false;
+
 TransformBase.prototype.init = function (original, callback, options) {
+    if (!original.hasOwnProperty('__kat_tick')) {
+        original.__kat_tick = 0;
+    }
+
     this.mappedItems = [];
     this.original = original;
     this.callback = callback;
@@ -82,6 +89,8 @@ TransformBase.prototype.init = function (original, callback, options) {
 };
 
 TransformBase.prototype.applyChanges = function (changes) {
+    this.original.__kat_tick = TransformBase.prototype.__tick;
+
     var self = this;
     var mappedItems = this.mappedItems;
     var moves = Object.create(null);
@@ -310,7 +319,8 @@ if (typeof requireJsModule === 'object' && requireJsModule) {
 }
 
 function applyChanges(changes) {
-    if (this.original._shouldPropagateChanges !== false) {
+    if (!(TransformBase.prototype.__checkTick &&
+            this.original.__kat_tick === TransformBase.prototype.__tick)) {
         this.applyChanges(changes);
     }
 }
@@ -460,15 +470,13 @@ module.exports = require('./createTransform')('groupBy', {
         var key;
         var group;
 
+        TransformBase.prototype.__tick++;
         TransformBase.prototype.applyChanges.call(this, changes);
+        TransformBase.prototype.__checkTick = true;
 
         for (key in groups) {
             group = groups[key];
-            // Changes were already propagated to chained transforms above.
-            // Fixes #1.
-            group.state._shouldPropagateChanges = false;
             group.notifyChanges();
-            group.state._shouldPropagateChanges = true;
 
             if (!group.state.peek().length) {
                 this.deleteGroup(key);
@@ -479,6 +487,8 @@ module.exports = require('./createTransform')('groupBy', {
         if (deletions) {
             this.notifyChanges();
         }
+
+        TransformBase.prototype.__checkTick = false;
     },
     valueAdded: function (value, index, groupKey, item) {
         groupKey = String(groupKey);
